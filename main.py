@@ -48,17 +48,24 @@ def predict(model, data_loader):
     """
 
     model.eval()
+    all_golds = []
     all_preds = []
 
     with torch.no_grad():
         # run through all batches in train generator
-        for j, (dataset_id, tokens, token_types, attn_mask, _) in enumerate(data_loader.get_batches()):
+        for j, (dataset_id, tokens, token_types, attn_mask, golds) in enumerate(data_loader.get_batches()):
             # get model predictions
             preds = model.predict(dataset_id, tokens, token_types, attn_mask)
 
+            # if we have a simultaneous multitask model, ignore the secondary tasks
+            # (this should never actually be a problem since we create dev/test loaders as singletask)
+            if len(golds) > 1 and isinstance(golds[0], list):
+                golds = golds[0]
+
+            all_golds.extend(golds.tolist())
             all_preds.extend(preds.tolist())
 
-    return all_preds
+    return all_golds, all_preds
 
 
 def evaluate(model, data_loader, metrics, is_test=False, idx2label=None, kwargs=None):
@@ -545,16 +552,18 @@ def predict_evaluate_setup(kwargs):
 
     # load data (create its own label2idx, just throw it away)
     logging.info("Loading data....")
-    data, _, l2i = dutils.get_datasets([kwargs.data], meta["tokenizer"])
+    # _, _, labels2idxes = dutils.get_datasets(["/raid/xiaoyuz1/goemotions/goemotions/data/train.csv"])
+    labels2idxes = meta['labels2idxes']
+    data, _, _ = dutils.get_datasets([kwargs.data], meta["tokenizer"], label2idx=[labels2idxes[0]])
 
     # for prediction, we care only about the first task in the first dataset
     is_multilabel = meta["is_multilabel"]
 
     # label2idx, also for just one task
-    idx2label = {value: key for key, value in meta["labels2idxes"][0][0].items()}
+    idx2label = {value: key for key, value in labels2idxes[0][0].items()}
 
     # create dataloader
-    data_loader = butils.SimpleBatchGenerator(data, meta["args"].batch_size, DEVICE, is_multilabel, len(idx2label),
+    data_loader = butils.SimpleBatchGenerator(data, meta["args"].batch_size, DEVICE, is_multilabel, len(labels2idxes[0][0]),
                                               shuffle=False)
 
     # create the model
@@ -563,7 +572,10 @@ def predict_evaluate_setup(kwargs):
 
     # predict the labels
     logging.info("Predicting labels....")
-    all_preds = predict(model, data_loader)
+    all_golds, all_preds = predict(model, data_loader)
+
+    with open(kwargs.out_label_path, 'wb+') as f:
+        pickle.dump((all_golds, all_preds, labels2idxes), f)
 
     # save the labels in text form
     labels = []
@@ -696,6 +708,8 @@ if __name__ == "__main__":
                                          "-meta.pkl.")
     predict_data_group.add_argument("--out_path", type=str, required=True,
                                     help="path to store the predictions.")
+    predict_data_group.add_argument("--out_label_path", type=str, required=True,
+                                    help="path to store the predictions and gt labels for the prediction.")
 
     predict_meta_group = predict_parser.add_argument_group("meta")
     predict_meta_group.add_argument("--log", action="store_true")

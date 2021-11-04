@@ -8,4 +8,4 @@ python main.py train \
 --data /raid/xiaoyuz1/goemotions/goemotions/data/test_pred.csv \
 --out_path /raid/xiaoyuz1/goemotions/pred_result/baseline/test_pred.txt 
 
-# python main.py predict --model_path /raid/xiaoyuz1/goemotions/save_path/bert --data /raid/xiaoyuz1/goemotions/goemotions/data/test_pred.csv --out_path /raid/xiaoyuz1/goemotions/pred_result/baseline/test_pred.txt
+python main.py predict --model_path /raid/xiaoyuz1/goemotions/save_path/bert --data /raid/xiaoyuz1/goemotions/goemotions/data/test_pred.csv --out_path /raid/xiaoyuz1/goemotions/pred_result/baseline/test_pred_debug.txt --out_label_path /raid/xiaoyuz1/goemotions/pred_result/baseline/test_pred_label.pkl
