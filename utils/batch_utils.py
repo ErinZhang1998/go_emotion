@@ -37,12 +37,14 @@ def get_batch(dataset, batch_size, batch_index, is_multilabel, num_labels=2):
 
     # label tensor is a list of class indices if single-label
     # and a "one-hot" (...k-hot?) encoding if multi-label
+    
     if is_multilabel:
         batch_y = torch.zeros(len(batch), num_labels)
 
         # set the elements of the label tensor to 1 appropriately
         # this will totally ignore anything after b[3], which is fine for here
         for i, b in enumerate(batch):
+            
             if isinstance(b[3], int):
                 batch_y[i][b[3]] = 1
             else:

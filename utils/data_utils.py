@@ -84,7 +84,7 @@ def numerify_dataset(dataset, tokenizer, label2idx, lower=True):
 
     for datapoint in dataset:
         # truncation of long sequences takes place here
-        processed_text = tokenizer(datapoint[0], truncation=True, max_length=tokenizer.max_len)
+        processed_text = tokenizer(datapoint[0], truncation=True, max_length=tokenizer.model_max_length)
 
         processed_labels = []
 

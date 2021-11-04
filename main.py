@@ -61,7 +61,7 @@ def predict(model, data_loader):
     return all_preds
 
 
-def evaluate(model, data_loader, metrics):
+def evaluate(model, data_loader, metrics, is_test=False, idx2label=None, kwargs=None):
     """
     Evaluate the model on the given data and return its scores
     @param model: an instance of one of our models (models/)
@@ -91,6 +91,27 @@ def evaluate(model, data_loader, metrics):
     calculated_metrics = {}
     for metric_name in metrics:
         calculated_metrics[metric_name] = metrics[metric_name](all_golds, all_preds)
+    
+    # ERIN
+    if is_test and idx2label is not None:
+        labels = []
+        for pred in all_preds:
+            if isinstance(pred, list):
+                labels.append(",".join([idx2label[i] for i, val in enumerate(pred) if val == 1]))
+            else:
+                labels.append(idx2label[pred])
+
+        with open(kwargs.data, "r", encoding="utf-8") as f:
+            input_data = list(csv.reader(f))[1:]
+
+        with open(kwargs.out_path, "w+", encoding="utf-8", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["text", "emotions"])
+
+            for datapoint, this_labels in zip(input_data, labels):
+                writer.writerow([datapoint[0], this_labels])
+        logging.info("Evaluate Finished! Labels saved to {fn}.".format(fn=kwargs.out_path))
+    #####
 
     return calculated_metrics
 
@@ -264,6 +285,7 @@ def train_main(seed, args):
 
     dev_loader = butils.SimpleBatchGenerator(dev_data, args.batch_size, DEVICE, train_is_multilabel[0][0],
                                              len(labels2idxes[0][0]), shuffle=False)
+    
     test_loader = butils.SimpleBatchGenerator(test_data, args.batch_size, DEVICE, train_is_multilabel[0][0],
                                               len(labels2idxes[0][0]), shuffle=False)
 
@@ -317,7 +339,8 @@ def train_main(seed, args):
                                                                 metric_value=dev_results[metric]))
 
     logging.info("Evaluating model on test set....")
-    eval_results = evaluate(model, test_loader, eval_metrics)
+    idx2label = {value: key for key, value in labels2idxes[0][0].items()}
+    eval_results = evaluate(model, test_loader, eval_metrics, is_test=True, idx2label=idx2label, kwargs=args)
 
     logging.info("EVAL RESULTS:")
     for metric in eval_results:
@@ -528,10 +551,10 @@ def predict_evaluate_setup(kwargs):
     is_multilabel = meta["is_multilabel"]
 
     # label2idx, also for just one task
-    idx2label = {value: key for key, value in meta["labels2idxes"].items()}
+    idx2label = {value: key for key, value in meta["labels2idxes"][0][0].items()}
 
     # create dataloader
-    data_loader = butils.SimpleBatchGenerator(data, meta["args"].batch_size, DEVICE, is_multilabel, len(l2i[0]),
+    data_loader = butils.SimpleBatchGenerator(data, meta["args"].batch_size, DEVICE, is_multilabel, len(idx2label),
                                               shuffle=False)
 
     # create the model
@@ -629,6 +652,10 @@ if __name__ == "__main__":
                              help="include this flag to use class weights in the loss calculations.")
     train_group.add_argument("--stress_weight", type=float, default=DEFAULTS["stress_weight"],
                              help="weight of the stress task for the Multi model. emotion is weighted with 1 - this.")
+    train_group.add_argument("--data", type=str, required=True,
+                                    help="path to the data for prediction. expected to be a .csv with headers: text, "
+                                         "(anything else).")
+    train_group.add_argument("--out_path", type=str, required=True, help="path to store the predictions.")
 
     meta_group = train_parser.add_argument_group("meta")
     meta_group.add_argument("--tmp_fn", help="an ID for the para meter checkpoints. will be randomly generated on the "
@@ -653,6 +680,8 @@ if __name__ == "__main__":
     meta_group.add_argument("--log", action="store_true")
     meta_group.add_argument("--logfile", type=str,
                             default="{currenttime}.log".format(currenttime=datetime.now().strftime("%m%d_%H:%M:%S")))
+    
+    
 
     ########## PREDICT ARGUMENTS ##########
     predict_parser = subparsers.add_parser("predict")

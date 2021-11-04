@@ -248,10 +248,10 @@ def main():
         )
 
     if data_args.block_size <= 0:
-        data_args.block_size = tokenizer.max_len
+        data_args.block_size = tokenizer.model_max_length
         # Our input block size will be the max possible for the model
     else:
-        data_args.block_size = min(data_args.block_size, tokenizer.max_len)
+        data_args.block_size = min(data_args.block_size, tokenizer.model_max_length)
 
     # Get datasets
 
