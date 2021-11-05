@@ -9,7 +9,7 @@ import torch.nn.utils.rnn as rnnutils
 from configs import const
 
 
-def get_batch(dataset, batch_size, batch_index, is_multilabel, num_labels=2):
+def get_batch(dataset, batch_size, batch_index, is_multilabel, num_labels=2, roberta=False):
     """
     Pull a batch of a given size and location from a given dataset
     @param dataset: the dataset in question, a list of tuples from our data processing
@@ -22,38 +22,54 @@ def get_batch(dataset, batch_size, batch_index, is_multilabel, num_labels=2):
 
     batch = dataset[batch_index * batch_size: min((batch_index + 1) * batch_size, len(dataset))]
 
+    if roberta:
+        b_token_idx = 0
+        b_mask_idx = 1
+        b_label_idx = 2
+    else:
+        b_token_idx = 0
+        b_token_type_idx = 1
+        b_mask_idx = 2
+        b_label_idx = 3
+
     # pad inputs with padding value from const
-    batch_tokens = rnnutils.pad_sequence([torch.tensor(b[0]) for b in batch],
+    batch_tokens = rnnutils.pad_sequence([torch.tensor(b[b_token_idx]) for b in batch],
                                          padding_value=const.PADDING_IDX,
                                          batch_first=True)
 
-    # pad token types with 0
-    batch_token_types = rnnutils.pad_sequence([torch.tensor(b[1]) for b in batch],
-                                              padding_value=0, batch_first=True)
+    if not roberta:
+        # pad token types with 0
+        batch_token_types = rnnutils.pad_sequence([torch.tensor(b[b_token_type_idx]) for b in batch],
+                                                padding_value=0, batch_first=True)
 
     # pad attention mask with 0 (this being the whole point of an attention mask)
-    batch_attn_mask = rnnutils.pad_sequence([torch.tensor(b[2]) for b in batch],
+    batch_attn_mask = rnnutils.pad_sequence([torch.tensor(b[b_mask_idx]) for b in batch],
                                             padding_value=0, batch_first=True)
 
     # label tensor is a list of class indices if single-label
     # and a "one-hot" (...k-hot?) encoding if multi-label
     
     if is_multilabel:
+        
         batch_y = torch.zeros(len(batch), num_labels)
 
         # set the elements of the label tensor to 1 appropriately
         # this will totally ignore anything after b[3], which is fine for here
         for i, b in enumerate(batch):
             
-            if isinstance(b[3], int):
-                batch_y[i][b[3]] = 1
+            if isinstance(b[b_label_idx], int):
+                batch_y[i][b[b_label_idx]] = 1
             else:
-                for label in b[3]:
+                for label in b[b_label_idx]:
                     batch_y[i][label] = 1
     else:
-        batch_y = torch.tensor([b[3][0] for b in batch])
+        batch_y = torch.tensor([b[b_label_idx][0] for b in batch])
 
-    return batch_tokens, batch_token_types, batch_attn_mask, batch_y
+    if roberta:
+        return batch_tokens, batch_attn_mask, batch_y
+    else:
+        return batch_tokens, batch_token_types, batch_attn_mask, batch_y
+        
 
 
 def get_batch_multitask(dataset, batch_size, batch_index, is_multilabel, num_labels):
@@ -167,13 +183,16 @@ class SimpleBatchGenerator(BatchGenerator):
         """
         return int(np.ceil(len(self.datasets[0]) / self.batch_size))
 
-    def get_batches(self):
+    def get_batches(self, roberta=False):
         """
         Generator that returns one batch at a time for one epoch. Shuffles data.
         """
 
         # sort the dataset from longest to shortest
-        dataset = sorted(self.datasets[0], key=lambda x: len(x[0]), reverse=True)
+        if self.shuffle:
+            dataset = sorted(self.datasets[0], key=lambda x: len(x[0]), reverse=True)
+        else:
+            dataset = self.datasets[0]
 
         batch_idxes = np.arange(0, len(self))
         if self.shuffle:
@@ -185,11 +204,16 @@ class SimpleBatchGenerator(BatchGenerator):
             # yield one batch at a time, where a batch is...
             # (token_ids, token_type_ids, attention_mask, golds)
             # golds is a list of [task_1_labels, task_2_labels, ...]
-            batch_tokens, batch_token_types, batch_attn_mask, batch_y = get_batch(dataset, self.batch_size, i,
-                                                                                  self.is_multilabel, self.num_labels)
+            if roberta:
+                batch_tokens, batch_attn_mask, batch_y = get_batch(dataset, self.batch_size, i,
+                                                                                  self.is_multilabel, self.num_labels, True)
+                yield 0, batch_tokens.to(self.device), batch_attn_mask.to(self.device), batch_y.to(self.device)
+            else:
+                batch_tokens, batch_token_types, batch_attn_mask, batch_y = get_batch(dataset, self.batch_size, i,
+                                                                                  self.is_multilabel, self.num_labels, False)
 
-            yield 0, batch_tokens.to(self.device), batch_token_types.to(self.device), \
-                  batch_attn_mask.to(self.device), batch_y.to(self.device)
+                yield 0, batch_tokens.to(self.device), batch_token_types.to(self.device), \
+                    batch_attn_mask.to(self.device), batch_y.to(self.device)
 
 
 class RoundRobinBatchGenerator(BatchGenerator):

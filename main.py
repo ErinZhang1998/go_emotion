@@ -479,7 +479,10 @@ def train_setup(kwargs):
     else:
         # run model a given number of times and report average performance
         if kwargs.num_restarts == 1:
-            model, meta = train_main(SEED, kwargs)
+            if kwargs.training_seed is not None:
+                model, meta = train_main(kwargs.training_seed, kwargs)
+            else:
+                model, meta = train_main(SEED, kwargs)
 
             # save model and all results if requested
             if kwargs.save_path is not None:
@@ -668,6 +671,7 @@ if __name__ == "__main__":
                                     help="path to the data for prediction. expected to be a .csv with headers: text, "
                                          "(anything else).")
     train_group.add_argument("--out_path", type=str, required=True, help="path to store the predictions.")
+    train_group.add_argument("--training_seed", type=int, required=False, help="seed for training")
 
     meta_group = train_parser.add_argument_group("meta")
     meta_group.add_argument("--tmp_fn", help="an ID for the para meter checkpoints. will be randomly generated on the "

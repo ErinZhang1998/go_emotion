@@ -66,7 +66,7 @@ def get_label2idx(labels):
     return label2idx
 
 
-def numerify_dataset(dataset, tokenizer, label2idx, lower=True):
+def numerify_dataset(dataset, tokenizer, label2idx, lower=True, roberta=False):
     """
     Turn a text dataset entirely into numbers
     @param dataset: the dataset returned from load_from_file, a list of lists (of text fields)
@@ -99,14 +99,31 @@ def numerify_dataset(dataset, tokenizer, label2idx, lower=True):
                     processed_label.append(label2idx[field_idx-1][label.lower()])
 
             processed_labels.append(processed_label)
+        
+        if(roberta):
+            processed_dataset.append(
+                tuple(
+                    [processed_text["input_ids"], 
+                    processed_text["attention_mask"],
+                    ] + processed_labels
+                )
+            )
+        else:
+            processed_dataset.append(
+                tuple(
+                    [processed_text["input_ids"], 
+                    processed_text["token_type_ids"],
+                    processed_text["attention_mask"],
+                    ] + processed_labels
+                )
+            )
 
-        processed_dataset.append(tuple([processed_text["input_ids"], processed_text["token_type_ids"],
-                                        processed_text["attention_mask"]] + processed_labels))
-
+        
+        
     return processed_dataset
 
 
-def get_datasets(filenames, tokenizer=None, label2idx=None, lower=True):
+def get_datasets(filenames, tokenizer=None, label2idx=None, lower=True, roberta=False):
     """
     Can load one or more datasets from file and return them as a list
     @param filenames: a list of filenames to load
@@ -133,7 +150,7 @@ def get_datasets(filenames, tokenizer=None, label2idx=None, lower=True):
                      for i, dataset in enumerate(data)]
 
     # now process all the data. each datapoint is (token_ids, seq_ids, attn_mask, label)
-    data = [numerify_dataset(d, tokenizer, l, lower) for d, l in zip(data, label2idx)]
+    data = [numerify_dataset(d, tokenizer, l, lower, roberta) for d, l in zip(data, label2idx)]
 
     # data is now a list of lists of tuples, each tuple indicating a numerical datapoint
     return data, tokenizer, label2idx
