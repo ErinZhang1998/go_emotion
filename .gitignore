@@ -7,7 +7,7 @@ jobs/
 *.tmp
 
 # iPython notebooks
-*.ipynb
+ipynb_ignore/*.ipynb
 
 # Large data files
 data/
