@@ -1,3 +1,12 @@
+# Sentiment
+for seed in 30010 46921 25577 52538 56440 41228 66558 48642 69556
+do
+   template="python main.py train --main_dataset /raid/xiaoyuz1/goemotions/goemotions/data/train_sentiment.csv --dev_file /raid/xiaoyuz1/goemotions/goemotions/data/dev_sentiment.csv --test_file /raid/xiaoyuz1/goemotions/goemotions/data/test_sentiment.csv --model bert --epochs 6 --lr 0.00005 --data /raid/xiaoyuz1/goemotions/goemotions/data/test_sentiment.csv --training_seed ${seed} --save_path /raid/xiaoyuz1/goemotions/save_path/sentiment/bert_seed-${seed} --out_path /raid/xiaoyuz1/goemotions/pred_result/baseline/sentiment/test_pred_seed-${seed}.txt"
+   eval $template
+   template2="python main.py predict --model_path /raid/xiaoyuz1/goemotions/save_path/sentiment/bert_seed-${seed} --data /raid/xiaoyuz1/goemotions/goemotions/data/test_sentiment.csv --out_path /raid/xiaoyuz1/goemotions/pred_result/baseline/sentiment/test_pred_debug.txt --out_label_path /raid/xiaoyuz1/goemotions/pred_result/baseline/sentiment/test_pred_seed-${seed}_label.pkl"
+   eval $template2
+done
+
 # FSJ
 for seed in 30010 46921 25577 52538 56440 41228 66558 48642 69556
 do
