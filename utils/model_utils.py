@@ -6,6 +6,11 @@ from models import baselines as baselines
 from models import multitask as multitask
 from models import simultaneous_multitask as simmulti
 
+'''
+bert: [[task1]]
+multi_alt: multiple dataset, one task each dataset [[task1], [task1]]
+multi: one dataset, multiple tasks [[task1, task2]]
+'''
 
 def create_model(labels2idxes, is_multilabel, args):
     """

@@ -1,3 +1,41 @@
+# [multi_alt] [16 intensities + goemotions]
+python main.py train \
+--main_dataset /raid/xiaoyuz1/goemotions/goemotions/data/train.csv \
+--aux_datasets /raid/xiaoyuz1/goemotions/SemEval2018-Task1-all-data/English/EI-oc/EIoc_goemotions_train.csv \
+--dev_file /raid/xiaoyuz1/goemotions/goemotions/data/dev.csv \
+--test_file /raid/xiaoyuz1/goemotions/goemotions/data/test.csv \
+--model multi_alt \
+--epochs 30 \
+--data /raid/xiaoyuz1/goemotions/goemotions/data/test.csv \
+--training_seed 12345 \
+--save_path /raid/xiaoyuz1/goemotions/save_path/multi_alt_semeval_oc/bert_seed-12345 \
+--out_path /raid/xiaoyuz1/goemotions/pred_result/multi_alt_semeval_oc/test_pred_seed-12345.txt
+
+
+# [has not tried yet, label number mismatch] direct fine tune? single-task [pretrained_on_semeval_ec]
+python main.py train \
+--main_dataset /raid/xiaoyuz1/goemotions/goemotions/data/train.csv \
+--dev_file /raid/xiaoyuz1/goemotions/goemotions/data/dev.csv \
+--test_file /raid/xiaoyuz1/goemotions/goemotions/data/test.csv \
+--model bert \
+--bert /raid/xiaoyuz1/goemotions/sem_eval_save_path/bert_seed-30010 \
+--epochs 15 \
+--data /raid/xiaoyuz1/goemotions/goemotions/data/test.csv \
+--training_seed 12345 \
+--save_path /raid/xiaoyuz1/goemotions/save_path/pretrained_on_semeval_ec/bert_seed-12345 \
+--out_path /raid/xiaoyuz1/goemotions/pred_result/pretrained_on_semeval_ec/test_pred_seed-12345.txt
+
+# sem eval 2018 e-c
+python main.py train --main_dataset /raid/xiaoyuz1/goemotions/SemEval2018-Task1-all-data/English/E-c/goemotions_train.csv --dev_file /raid/xiaoyuz1/goemotions/SemEval2018-Task1-all-data/English/E-c/goemotions_dev.csv --test_file /raid/xiaoyuz1/goemotions/SemEval2018-Task1-all-data/English/E-c/goemotions_test.csv --model bert --epochs 10 --lr 0.00001 --data /raid/xiaoyuz1/goemotions/SemEval2018-Task1-all-data/English/E-c/goemotions_test.csv --training_seed 30010 --save_path /raid/xiaoyuz1/goemotions/sem_eval_save_path/bert_seed-30010 --out_path /raid/xiaoyuz1/goemotions/sem_eval_pred_result/test_pred_seed-30010.txt
+
+for seed in 30010
+do
+   template="python main.py train --main_dataset /raid/xiaoyuz1/goemotions/SemEval2018-Task1-all-data/English/E-c/goemotions_train.csv --dev_file /raid/xiaoyuz1/goemotions/SemEval2018-Task1-all-data/English/E-c/goemotions_dev.csv --test_file /raid/xiaoyuz1/goemotions/SemEval2018-Task1-all-data/English/E-c/goemotions_test.csv --model bert --epochs 20 --lr 0.00001 --data /raid/xiaoyuz1/goemotions/SemEval2018-Task1-all-data/English/E-c/goemotions_test.csv --training_seed ${seed} --save_path /raid/xiaoyuz1/goemotions/sem_eval_save_path/bert_seed-${seed} --out_path /raid/xiaoyuz1/goemotions/sem_eval_pred_result/test_pred_seed-${seed}.txt"
+   echo $template
+done
+
+# ------------------------------------------------------------------------------------------------------------------------
+
 # Sentiment
 for seed in 30010 46921 25577 52538 56440 41228 66558 48642 69556
 do

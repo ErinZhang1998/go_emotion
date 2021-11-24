@@ -152,6 +152,7 @@ def train(model, train_loader, loss_calculator, optimizer, scheduler, dev_loader
         # run through all batches in train generator
         for j, (dataset_id, tokens, token_types, attn_mask, golds) in enumerate(train_loader.get_batches()):
             # get model predictions
+            # import pdb; pdb.set_trace()
             preds, loss = model.get_loss(dataset_id, tokens, token_types, attn_mask, loss_calculator, golds)
 
             # backward pass, clip gradients, optimizer step
@@ -269,6 +270,7 @@ def train_main(seed, args):
     logging.info("Creating model....")
     # create model
     model, task_setting = moutils.create_model(labels2idxes, train_is_multilabel, args)
+
     model = model.to(DEVICE)
 
     # training can be multitask; evaluation will not
@@ -315,14 +317,18 @@ def train_main(seed, args):
     # note that 'binary' could theoretically cause a problem if we had a two-class multilabel task
     dev_metrics = {
         "dev accuracy": lambda gold, pred: skmetric.accuracy_score(gold, pred),
+        "dev precision": lambda gold, pred: skmetric.precision_score(gold, pred,average="macro"),
+        "dev recall": lambda gold, pred: skmetric.recall_score(gold, pred,average="macro"),
         "dev f1": lambda gold, pred: skmetric.f1_score(gold, pred,
-                                                       average="binary" if len(labels2idxes[0]) == 2 else "macro")
+                                                       average="binary" if len(labels2idxes[0][0]) == 2 else "macro")
     }
 
     eval_metrics = {
-        "eval accuracy": lambda gold, pred: skmetric.accuracy_score(gold, pred),
-        "eval f1": lambda gold, pred: skmetric.f1_score(gold, pred,
-                                                        average="binary" if len(labels2idxes[0]) == 2 else "macro")
+        "test accuracy": lambda gold, pred: skmetric.accuracy_score(gold, pred),
+        "test precision": lambda gold, pred: skmetric.precision_score(gold, pred,average="macro"),
+        "test recall": lambda gold, pred: skmetric.recall_score(gold, pred,average="macro"),
+        "test f1": lambda gold, pred: skmetric.f1_score(gold, pred,
+                                                        average="binary" if len(labels2idxes[0][0]) == 2 else "macro")
     }
 
     # NOTE: we want the hamming loss to be minimized, unlike the other metrics
@@ -491,6 +497,7 @@ def train_setup(kwargs):
                     model.bert.save_pretrained(kwargs.save_path + "-lm")
                 else:
                     logging.info("Saving entire model and meta....")
+                    model.save_pretrained(kwargs.save_path)
                     torch.save(model, kwargs.save_path + "-params.pth")
                     with open(kwargs.save_path + "-meta.pkl", "wb+") as f:
                         pickle.dump(meta, f)

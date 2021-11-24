@@ -15,7 +15,7 @@ def sniff_multilabel(datasets):
 
     for dataset in datasets:
         dataset_is_multilabel = []
-        for task_idx in range(3, len(dataset[0])):
+        for task_idx in range(3, len(dataset[0])): ## 3 because, input_idx, token_type_idx, mask, labels
             task_is_multilabel = any([len(d[task_idx]) > 1 for d in dataset])
             dataset_is_multilabel.append(task_is_multilabel)
 
@@ -87,6 +87,7 @@ def numerify_dataset(dataset, tokenizer, label2idx, lower=True, roberta=False):
         processed_text = tokenizer(datapoint[0], truncation=True, max_length=tokenizer.model_max_length)
 
         processed_labels = []
+        # [[task 1 labels],[task 2 labels]]
 
         # process 1+ tasks for each datapoint
         for field_idx in range(1, len(datapoint)):
@@ -117,7 +118,6 @@ def numerify_dataset(dataset, tokenizer, label2idx, lower=True, roberta=False):
                     ] + processed_labels
                 )
             )
-
         
         
     return processed_dataset
@@ -146,8 +146,17 @@ def get_datasets(filenames, tokenizer=None, label2idx=None, lower=True, roberta=
 
     # create a separate label2idx for each dataset and each of their tasks
     if label2idx is None or len(label2idx) < len(data):
-        label2idx = [[get_label2idx([d[j] for d in dataset]) for j in range(1, num_tasks[i]+1)]
-                     for i, dataset in enumerate(data)]
+        # label2idx = [[get_label2idx([d[j] for d in dataset]) for j in range(1, num_tasks[i]+1)]
+        #              for i, dataset in enumerate(data)]
+        label2idx = []
+        for i, dataset in enumerate(data):
+            # for each dataset
+            label2idx_i = []
+            for j in range(1, num_tasks[i]+1):
+                # for each task in the dataset
+                label2idx_i += [get_label2idx([d[j] for d in dataset])]
+            
+            label2idx.append(label2idx_i)
 
     # now process all the data. each datapoint is (token_ids, seq_ids, attn_mask, label)
     data = [numerify_dataset(d, tokenizer, l, lower, roberta) for d, l in zip(data, label2idx)]
