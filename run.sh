@@ -11,6 +11,12 @@ python main.py train \
 --save_path /raid/xiaoyuz1/goemotions/save_path/multi_alt_semeval_oc/bert_seed-12345 \
 --out_path /raid/xiaoyuz1/goemotions/pred_result/multi_alt_semeval_oc/test_pred_seed-12345.txt
 
+python main.py predict \
+--model_path /raid/xiaoyuz1/goemotions/save_path/multi_alt_semeval_oc/bert_seed-12345 \
+--data /raid/xiaoyuz1/goemotions/goemotions/data/test.csv \
+--out_path /raid/xiaoyuz1/goemotions/pred_result/baseline/sentiment/test_pred_debug.txt \
+--out_label_path /raid/xiaoyuz1/goemotions/pred_result/multi_alt_semeval_oc/test_pred_seed-12345_label.pkl
+
 
 # [has not tried yet, label number mismatch] direct fine tune? single-task [pretrained_on_semeval_ec]
 python main.py train \
