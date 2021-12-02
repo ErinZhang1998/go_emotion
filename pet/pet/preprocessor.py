@@ -44,7 +44,6 @@ class Preprocessor(ABC):
         """Convert the given example into a set of input features"""
         pass
 
-
 class MLMPreprocessor(Preprocessor):
     """Preprocessor for models pretrained using a masked language modeling objective (e.g., BERT)."""
 
