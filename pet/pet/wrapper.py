@@ -278,6 +278,7 @@ class TransformerModelWrapper:
         self.model.zero_grad()
 
         train_iterator = trange(int(num_train_epochs), desc="Epoch")
+        
 
         for _ in train_iterator:
             epoch_iterator = tqdm(train_dataloader, desc="Iteration")
@@ -434,7 +435,7 @@ class TransformerModelWrapper:
             if self.task_helper:
                 self.task_helper.add_special_input_features(example, input_features)
             features.append(input_features)
-            if ex_index < 5:
+            if ex_index < 0:
                 logger.info(f'--- Example {ex_index} ---')
                 logger.info(input_features.pretty_print(self.tokenizer))
         return features

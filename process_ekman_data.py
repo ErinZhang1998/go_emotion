@@ -1,9 +1,53 @@
 import pandas as pd 
 
+GO_EMOTIONS_LABELS = [
+    'admiration','amusement','anger','annoyance','approval','caring','confusion','curiosity','desire','disappointment','disapproval','disgust','embarrassment','excitement','fear','gratitude','grief','joy','love','nervousness','optimism','pride','realization','relief','remorse','sadness','surprise','neutral',
+]
+GO_EMOTION_TEXT_TO_LABEL = dict(zip(
+    GO_EMOTIONS_LABELS,
+    range(len(GO_EMOTIONS_LABELS)),
+))
+
+def process_list_of_raw_labels(label_raw, target_num):
+    label_text = []
+    for l in label_raw:
+        if int(l) == int(target_num):
+            label_text.append(1)
+    assert len(label_text) <= 1
+    if len(label_text) > 0:
+        return "1"
+    else:
+        return "0"
+
+def read_goemotions(path, yes_emotion):
+    '''
+    :param path: .csv file with [text, label] columns for the GoEmotions dataset
+    '''
+    TABLE = {
+        "anger" : 0, "disgust" : 1, "fear" : 2, "joy" : 3, "sadness" : 4, "surprise" : 5, "neutral" : 6,
+    }
+    
+    df = pd.read_csv(path)
+    texts = []
+    labels = []
+
+    for i in range(len(df)):
+        row = df.iloc[i]
+        texts.append(row['text'])
+        label_raw = row['label'].strip().split(",")
+        label = process_list_of_raw_labels(label_raw, TABLE[yes_emotion])
+        labels.append(label)
+    
+    df = pd.DataFrame({'text': texts,
+                   'label': labels})
+    
+    return df
+
+
 # AffectiveText
 def read1(tweet_fs, emotion_fs, yes_emotion, thresh = 20):
     TABLE = {
-        0 : "anger", 1 : "disgust", 2: "fear", 3: "joy", 4:"sadness", 5:"surprise",
+        0 : "anger", 1 : "disgust", 2: "fear", 3: "joy", 4:"sadness", 5:"surprise", 6: "neutral",
     }
     
     texts = []
@@ -28,13 +72,25 @@ def read1(tweet_fs, emotion_fs, yes_emotion, thresh = 20):
             texts.append(text)
             label_text = []
             for li, l in enumerate(label_raw):
-                if int(l) >= thresh and TABLE[li] == yes_emotion:
-                    label_text.append(str(li))
-            
-            if len(label_text) > 0:
-                labels.append(",".join(label_text))
+                if yes_emotion != "neutral":
+                    if int(l) >= thresh and TABLE[li] == yes_emotion:
+                        label_text.append(1)
+                else:
+                    if int(l) >= thresh:
+                        label_text.append(1)
+                
+            if yes_emotion != "neutral":
+                assert len(label_text) <= 1
+                if len(label_text) > 0:
+                    labels.append("1")
+                else:
+                    labels.append("0")
             else:
-                labels.append("6")
+                if len(label_text) == 0:
+                    
+                    labels.append("1")
+                else:
+                    labels.append("0")
             lineNo += 1
     
     df = pd.DataFrame({'text': texts,
@@ -42,10 +98,16 @@ def read1(tweet_fs, emotion_fs, yes_emotion, thresh = 20):
     
     return df
 
-tweet_f1 = "/raid/xiaoyuz1/goemotions/metaData/AffectiveText.test/affectivetext_test.xml"
-emotion_f1 = "/raid/xiaoyuz1/goemotions/metaData/AffectiveText.test/affectivetext_test.emotions.gold"
-tweet_f2 = "/raid/xiaoyuz1/goemotions/metaData/AffectiveText.trial/affectivetext_trial.xml"
-emotion_f2 = "/raid/xiaoyuz1/goemotions/metaData/AffectiveText.trial/affectivetext_trial.emotions.gold"
-
-df1 = read1([tweet_f1, tweet_f2], [emotion_f1, emotion_f2])
-# df1.to_csv()
+def merge(paths):
+    texts = []
+    labels = []
+    
+    for path in paths:
+        df = pd.read_csv(path)
+        texts += list(df['text'].to_numpy())
+        labels += list(df['label'].to_numpy())
+    
+    df = pd.DataFrame({'text': texts,
+                   'label': labels})
+    
+    return df

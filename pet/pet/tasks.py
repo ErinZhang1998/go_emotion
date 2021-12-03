@@ -146,7 +146,7 @@ class BinaryProcessor(DataProcessor):
 
     def get_labels(self):
         return ["0", "1"]
-        
+
     @staticmethod
     def _create_examples(path : str, set_type: str) -> List[InputExample]:
         df = pd.read_csv(path)
@@ -156,7 +156,7 @@ class BinaryProcessor(DataProcessor):
             row = df.iloc[i]
             guid = "%s-%s" % (set_type, i)
             text_a = row['text']
-            label = row['label']
+            label = str(row['label'])
 
             example = InputExample(guid=guid, text_a=text_a, label=label)
             examples.append(example)
@@ -170,11 +170,11 @@ PROCESSORS = {
 }  
 TASK_HELPERS = {}
 METRICS = {
-    'ekman' : ["acc", "f1-macro"],
-    'goemotions' : ["acc", "f1-macro"],
+    'ekman' : ["acc"],
+    'goemotions' : ["acc"],
 }
 
-DEFAULT_METRICS = ["f1-macro"]
+DEFAULT_METRICS = ["acc"]
 
 TRAIN_SET = "train"
 DEV_SET = "dev"
@@ -227,7 +227,10 @@ def load_examples(
 
     all_labels = []
     for example in examples:
-        all_labels += example.label 
+        if isinstance(example.label, list):
+            all_labels += example.label 
+        else:
+            all_labels += [example.label]
     label_distribution = Counter(all_labels)
     logger.info(f"Returning {len(examples)} {set_type} examples with label dist.: {list(label_distribution.items())}")
 

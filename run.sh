@@ -1,13 +1,14 @@
-python3 cli.py \
+CUDA_VISIBLE_DEVICES=4 python3 cli.py \
 --method single \
 --pattern_ids 0 \
---data_dir /raid/xiaoyuz1/goemotions/goemotions/data/ekman \
---model_type roberta \
---model_name_or_path roberta-large \
+--data_dir /raid/xiaoyuz1/goemotions/goemotions/data/ekman/anger \
+--model_type bert \
+--model_name_or_path bert-base-uncased \
 --task_name ekman \
---output_dir /raid/xiaoyuz1/goemotions/prompt/ekman \
+--output_dir /raid/xiaoyuz1/goemotions/prompt/anger \
 --do_train \
---do_eval
+--do_eval \
+--pet_per_gpu_train_batch_size 32
 
 
 # [multi_alt] [16 intensities + goemotions]

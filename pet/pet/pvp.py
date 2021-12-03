@@ -64,7 +64,6 @@ class PVP(ABC):
 
     def _build_mlm_logits_to_cls_logits_tensor(self):
         label_list = self.wrapper.config.label_list
-        import pdb; pdb.set_trace()
 
         m2c_tensor = torch.ones([len(label_list), self.max_num_verbalizers], dtype=torch.long) * -1
 
@@ -268,7 +267,7 @@ class BinaryPVP(PVP):
         text_a = self.shortenable(example.text_a)
 
         if self.pattern_id == 0:
-            return ["Do you feel anger, annoyance, or disapproval?", self.mask, '.', text_a], []
+            return [text_a, "." , "So you feel anger, annoyance, or disapproval?", self.mask, "."], []
         else:
             raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
 

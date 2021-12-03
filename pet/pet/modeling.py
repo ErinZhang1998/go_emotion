@@ -362,7 +362,7 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
                 eval_config.save(os.path.join(pattern_iter_output_dir, 'eval_config.json'))
                 logger.info("Saving complete")
 
-                if save_unlabeled_logits:
+                if save_unlabeled_logits and unlabeled_data is not None:
                     logits = evaluate(wrapper, unlabeled_data, eval_config)['logits']
                     save_logits(os.path.join(pattern_iter_output_dir, 'logits.txt'), logits)
 
@@ -534,6 +534,7 @@ def train_single_model(model: TransformerModelWrapper, train_data: List[InputExa
     """
 
     device = torch.device(config.device if config.device else "cuda" if torch.cuda.is_available() else "cpu")
+
     if not ipet_train_data:
         ipet_train_data = []
 
@@ -541,8 +542,8 @@ def train_single_model(model: TransformerModelWrapper, train_data: List[InputExa
 
     model.model.to(device)
 
-    if train_data and return_train_set_results:
-        results_dict['train_set_before_training'] = evaluate(model, train_data, eval_config)['scores']['acc']
+    # if train_data and return_train_set_results:
+        # results_dict['train_set_before_training'] = evaluate(model, train_data, eval_config)['scores']['acc']
 
     all_train_data = train_data + ipet_train_data
 

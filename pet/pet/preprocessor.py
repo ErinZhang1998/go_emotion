@@ -80,6 +80,7 @@ class MLMPreprocessor(Preprocessor):
         assert len(token_type_ids) == self.wrapper.config.max_seq_length
 
         label = self.label_map[example.label] if example.label is not None else -100
+        
         logits = example.logits if example.logits else [-1]
 
         if labelled:
