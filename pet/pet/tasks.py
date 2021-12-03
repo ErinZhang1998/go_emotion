@@ -125,7 +125,7 @@ class DataProcessor(ABC):
         """Get the list of labels for this data set."""
         pass
 
-class GoEmotionsProcessor(DataProcessor):
+class BinaryProcessor(DataProcessor):
 
     def __init__(self, emotion_type: str = None):
         if emotion_type is not None:
@@ -145,11 +145,8 @@ class GoEmotionsProcessor(DataProcessor):
         raise NotImplementedError()
 
     def get_labels(self):
-        if self.emotion_type == 'ekman':
-            return [str(i) for i in range(len(EKMAN_LABELS))]
-        elif self.emotion_type == 'goemotions':
-            return [str(i) for i in range(len(GO_EMOTIONS_LABELS))]
-
+        return ["0", "1"]
+        
     @staticmethod
     def _create_examples(path : str, set_type: str) -> List[InputExample]:
         df = pd.read_csv(path)
@@ -160,17 +157,16 @@ class GoEmotionsProcessor(DataProcessor):
             guid = "%s-%s" % (set_type, i)
             text_a = row['text']
             label = row['label']
-            labels = [l.lower().strip() for l in label.split(",")]
 
-            example = InputExample(guid=guid, text_a=text_a, label=labels)
+            example = InputExample(guid=guid, text_a=text_a, label=label)
             examples.append(example)
 
         return examples
 
 # type: Dict[str,Callable[[],DataProcessor]]
 PROCESSORS = {
-    'ekman' : lambda: GoEmotionsProcessor('ekman'),
-    'goemotions' : lambda : GoEmotionsProcessor('goemotions'),
+    'ekman' : BinaryProcessor,
+    'goemotions' : BinaryProcessor,
 }  
 TASK_HELPERS = {}
 METRICS = {

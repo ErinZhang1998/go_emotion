@@ -258,13 +258,10 @@ class PVP(ABC):
 
         return verbalize
 
-class EkmanPVP(PVP):
+class BinaryPVP(PVP):
     VERBALIZER = {
-        "0": ["Yes"],
-        "1": ["No"],
-        "2": ["No"],
-        "3": ["No"],
-        
+        "0": ["No"],
+        "1": ["Yes"],
     }
 
     def get_parts(self, example: InputExample) -> FilledPattern:
@@ -276,8 +273,8 @@ class EkmanPVP(PVP):
             raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
 
     def verbalize(self, label) -> List[str]:
-        return EkmanPVP.VERBALIZER[label]
+        return BinaryPVP.VERBALIZER[label]
 
 PVPS = {
-    'ekman' : EkmanPVP,
+    'ekman' : BinaryPVP,
 }
