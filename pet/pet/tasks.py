@@ -25,8 +25,14 @@ from typing import List, Dict, Callable
 import log
 from pet import task_helpers
 from pet.utils import InputExample
+import pandas as pd
 
 logger = log.get_logger('root')
+
+GO_EMOTIONS_LABELS = [
+    'admiration','amusement','anger','annoyance','approval','caring','confusion','curiosity','desire','disappointment','disapproval','disgust','embarrassment','excitement','fear','gratitude','grief','joy','love','nervousness','optimism','pride','realization','relief','remorse','sadness','surprise','neutral',
+]
+EKMAN_LABELS = ['anger', 'disgust', 'fear', 'joy', 'sadness', 'surprise', 'neutral']
 
 
 def _shuffle_and_restrict(examples: List[InputExample], num_examples: int, seed: int = 42) -> List[InputExample]:
@@ -119,68 +125,60 @@ class DataProcessor(ABC):
         """Get the list of labels for this data set."""
         pass
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!DO NOT USE
-class MnliProcessor(DataProcessor):
-    """Processor for the MultiNLI data set (GLUE version)."""
+class GoEmotionsProcessor(DataProcessor):
+
+    def __init__(self, emotion_type: str = None):
+        if emotion_type is not None:
+            assert emotion_type in ['ekman', 'goemotions']
+        self.emotion_type = emotion_type
 
     def get_train_examples(self, data_dir):
-        return self._create_examples(MnliProcessor._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+        return self._create_examples(os.path.join(data_dir, "train.csv"), "train")
 
     def get_dev_examples(self, data_dir):
-        return self._create_examples(MnliProcessor._read_tsv(os.path.join(data_dir, "dev_matched.tsv")), "dev_matched")
+        return self._create_examples(os.path.join(data_dir, "dev.csv"), "dev")
 
     def get_test_examples(self, data_dir) -> List[InputExample]:
-        raise NotImplementedError()
+        return self._create_examples(os.path.join(data_dir, "test.csv"), "test")
 
     def get_unlabeled_examples(self, data_dir) -> List[InputExample]:
-        return self.get_train_examples(data_dir)
+        raise NotImplementedError()
 
     def get_labels(self):
-        return ["contradiction", "entailment", "neutral"]
+        if self.emotion_type == 'ekman':
+            return [str(i) for i in range(len(EKMAN_LABELS))]
+        elif self.emotion_type == 'goemotions':
+            return [str(i) for i in range(len(GO_EMOTIONS_LABELS))]
 
     @staticmethod
-    def _create_examples(lines: List[List[str]], set_type: str) -> List[InputExample]:
+    def _create_examples(path : str, set_type: str) -> List[InputExample]:
+        df = pd.read_csv(path)
         examples = []
 
-        for (i, line) in enumerate(lines):
-            if i == 0:
-                continue
-            guid = "%s-%s" % (set_type, line[0])
-            text_a = line[8]
-            text_b = line[9]
-            label = line[-1]
+        for i in range(len(df)):
+            row = df.iloc[i]
+            guid = "%s-%s" % (set_type, i)
+            text_a = row['text']
+            label = row['label']
+            labels = [l.lower().strip() for l in label.split(",")]
 
-            example = InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label)
+            example = InputExample(guid=guid, text_a=text_a, label=labels)
             examples.append(example)
 
         return examples
 
-    @staticmethod
-    def _read_tsv(input_file, quotechar=None):
-        with open(input_file, "r", encoding="utf-8-sig") as f:
-            reader = csv.reader(f, delimiter="\t", quotechar=quotechar)
-            lines = []
-            for line in reader:
-                lines.append(line)
-            return lines
-
+# type: Dict[str,Callable[[],DataProcessor]]
 PROCESSORS = {
-    "agnews": AgnewsProcessor,
-}  # type: Dict[str,Callable[[],DataProcessor]]
-
-TASK_HELPERS = {
-    "wsc": task_helpers.WscTaskHelper,
-    "multirc": task_helpers.MultiRcTaskHelper,
-    "copa": task_helpers.CopaTaskHelper,
-    "record": task_helpers.RecordTaskHelper,
-}
-
+    'ekman' : lambda: GoEmotionsProcessor('ekman'),
+    'goemotions' : lambda : GoEmotionsProcessor('goemotions'),
+}  
+TASK_HELPERS = {}
 METRICS = {
-    "cb": ["acc", "f1-macro"],
-    "multirc": ["acc", "f1", "em"]
+    'ekman' : ["acc", "f1-macro"],
+    'goemotions' : ["acc", "f1-macro"],
 }
 
-DEFAULT_METRICS = ["acc"]
+DEFAULT_METRICS = ["f1-macro"]
 
 TRAIN_SET = "train"
 DEV_SET = "dev"
@@ -190,7 +188,10 @@ UNLABELED_SET = "unlabeled"
 SET_TYPES = [TRAIN_SET, DEV_SET, TEST_SET, UNLABELED_SET]
 
 
-def load_examples(task, data_dir: str, set_type: str, *_, num_examples: int = None,
+def load_examples(
+    task, 
+    data_dir: str, 
+    set_type: str, *_, num_examples: int = None,
                   num_examples_per_label: int = None, seed: int = 42) -> List[InputExample]:
     """Load examples for a given task."""
     assert (num_examples is not None) ^ (num_examples_per_label is not None), \
@@ -228,7 +229,10 @@ def load_examples(task, data_dir: str, set_type: str, *_, num_examples: int = No
             limited_examples.add(example)
         examples = limited_examples.to_list()
 
-    label_distribution = Counter(example.label for example in examples)
+    all_labels = []
+    for example in examples:
+        all_labels += example.label 
+    label_distribution = Counter(all_labels)
     logger.info(f"Returning {len(examples)} {set_type} examples with label dist.: {list(label_distribution.items())}")
 
     return examples

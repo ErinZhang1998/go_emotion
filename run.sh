@@ -1,3 +1,15 @@
+python3 cli.py \
+--method single \
+--pattern_ids 0 \
+--data_dir /raid/xiaoyuz1/goemotions/goemotions/data/ekman \
+--model_type roberta \
+--model_name_or_path roberta-large \
+--task_name ekman \
+--output_dir /raid/xiaoyuz1/goemotions/prompt/ekman \
+--do_train \
+--do_eval
+
+
 # [multi_alt] [16 intensities + goemotions]
 python main.py train \
 --main_dataset /raid/xiaoyuz1/goemotions/goemotions/data/train.csv \

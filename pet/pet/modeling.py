@@ -295,6 +295,117 @@ def train_classifier(model_config: WrapperConfig, train_config: TrainConfig, eva
                        do_eval=do_eval, seed=seed)
 
 
+def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, eval_config: EvalConfig,
+                       pattern_ids: List[int], output_dir: str, ipet_data_dir: str = None, repetitions: int = 3,
+                       train_data: List[InputExample] = None, unlabeled_data: List[InputExample] = None,
+                       eval_data: List[InputExample] = None, do_train: bool = True, do_eval: bool = True,
+                       save_unlabeled_logits: bool = False, seed: int = 42):
+    """
+    Train and evaluate an ensemble of PET models without knowledge distillation.
+
+    :param model_config: the model configuration to use
+    :param train_config: the training configuration to use
+    :param eval_config: the evaluation configuration to use
+    :param pattern_ids: the ids of all PVPs to use
+    :param output_dir: the output directory
+    :param ipet_data_dir: optional directory containing additional training data for iPET
+    :param repetitions: the number of training repetitions
+    :param train_data: the training examples to use
+    :param unlabeled_data: the unlabeled examples to use
+    :param eval_data: the evaluation examples to use
+    :param do_train: whether to perform training
+    :param do_eval: whether to perform evaluation
+    :param save_unlabeled_logits: whether logits for unlabeled examples should be saved in a file ``logits.txt``. This
+           is required for both iPET and knowledge distillation.
+    :param seed: the random seed to use
+    """
+    results = defaultdict(lambda: defaultdict(list))
+    set_seed(seed)
+
+    wrapper = TransformerModelWrapper(model_config, False)
+
+    for pattern_id in pattern_ids:
+        for iteration in range(repetitions):
+
+            wrapper.init_preprocessor(pattern_id)
+
+            model_config.pattern_id = pattern_id
+            results_dict = {}
+
+            pattern_iter_output_dir = "{}/p{}-i{}".format(output_dir, pattern_id, iteration)
+
+            if os.path.exists(pattern_iter_output_dir):
+                logger.warning(f"Path {pattern_iter_output_dir} already exists, skipping it...")
+                continue
+
+            if not os.path.exists(pattern_iter_output_dir):
+                os.makedirs(pattern_iter_output_dir)
+
+            # Training
+            if do_train:
+                ipet_train_data = None
+
+                results_dict.update(train_single_model(
+                    wrapper, 
+                    train_data, 
+                    train_config, 
+                    eval_config,
+                    ipet_train_data=ipet_train_data,
+                    unlabeled_data=unlabeled_data))
+
+                with open(os.path.join(pattern_iter_output_dir, 'results.txt'), 'w') as fh:
+                    fh.write(str(results_dict))
+
+                logger.info("Saving trained model at {}...".format(pattern_iter_output_dir))
+                wrapper.save(pattern_iter_output_dir)
+                train_config.save(os.path.join(pattern_iter_output_dir, 'train_config.json'))
+                eval_config.save(os.path.join(pattern_iter_output_dir, 'eval_config.json'))
+                logger.info("Saving complete")
+
+                if save_unlabeled_logits:
+                    logits = evaluate(wrapper, unlabeled_data, eval_config)['logits']
+                    save_logits(os.path.join(pattern_iter_output_dir, 'logits.txt'), logits)
+
+                if not do_eval:
+                    wrapper.model = None
+                    wrapper = None
+                    torch.cuda.empty_cache()
+
+            # Evaluation
+            if do_eval:
+                logger.info("Starting evaluation...")
+                if not wrapper:
+                    wrapper = TransformerModelWrapper.from_pretrained(pattern_iter_output_dir)
+
+                eval_result = evaluate(wrapper, eval_data, eval_config, priming_data=train_data)
+
+                save_predictions(os.path.join(pattern_iter_output_dir, 'predictions.jsonl'), wrapper, eval_result)
+                save_logits(os.path.join(pattern_iter_output_dir, 'eval_logits.txt'), eval_result['logits'])
+
+                scores = eval_result['scores']
+                logger.info("--- RESULT (pattern_id={}, iteration={}) ---".format(pattern_id, iteration))
+                logger.info(scores)
+
+                results_dict['test_set_after_training'] = scores
+                with open(os.path.join(pattern_iter_output_dir, 'results.json'), 'w') as fh:
+                    json.dump(results_dict, fh)
+
+                for metric, value in scores.items():
+                    results[metric][pattern_id].append(value)
+
+                wrapper.model = None
+                wrapper = None
+                torch.cuda.empty_cache()
+
+    if do_eval:
+        logger.info("=== OVERALL RESULTS ===")
+        _write_results(os.path.join(output_dir, 'result_test.txt'), results)
+    else:
+        logger.info("=== ENSEMBLE TRAINING COMPLETE ===")
+
+
+
+
 def train_pet_ensemble(model_config: WrapperConfig, train_config: TrainConfig, eval_config: EvalConfig,
                        pattern_ids: List[int], output_dir: str, ipet_data_dir: str = None, repetitions: int = 3,
                        train_data: List[InputExample] = None, unlabeled_data: List[InputExample] = None,

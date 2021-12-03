@@ -24,6 +24,7 @@ import torch
 from pet.tasks import PROCESSORS, load_examples, UNLABELED_SET, TRAIN_SET, DEV_SET, TEST_SET, METRICS, DEFAULT_METRICS
 from pet.utils import eq_div
 from pet.wrapper import WRAPPER_TYPES, MODEL_CLASSES, SEQUENCE_CLASSIFIER_WRAPPER, WrapperConfig
+from pet.modeling import train_pet_one_model
 import pet
 import log
 
@@ -92,7 +93,7 @@ def main():
     parser = argparse.ArgumentParser(description="Command line interface for PET/iPET")
 
     # Required parameters
-    parser.add_argument("--method", required=True, choices=['pet', 'ipet', 'sequence_classifier'],
+    parser.add_argument("--method", required=True, choices=['single', 'pet', 'ipet', 'sequence_classifier'],
                         help="The training method to use. Either regular sequence classification, PET or iPET.")
     parser.add_argument("--data_dir", default=None, type=str, required=True,
                         help="The input data dir. Should contain the data files for the task.")
@@ -245,38 +246,16 @@ def main():
         args.task_name, args.data_dir, TRAIN_SET, num_examples=train_ex, num_examples_per_label=train_ex_per_label)
     eval_data = load_examples(
         args.task_name, args.data_dir, eval_set, num_examples=test_ex, num_examples_per_label=test_ex_per_label)
-    unlabeled_data = load_examples(
-        args.task_name, args.data_dir, UNLABELED_SET, num_examples=args.unlabeled_examples)
-
     args.metrics = METRICS.get(args.task_name, DEFAULT_METRICS)
 
     pet_model_cfg, pet_train_cfg, pet_eval_cfg = load_pet_configs(args)
-    sc_model_cfg, sc_train_cfg, sc_eval_cfg = load_sequence_classifier_configs(args)
-    ipet_cfg = load_ipet_config(args)
-
-    if args.method == 'pet':
-        pet.train_pet(pet_model_cfg, pet_train_cfg, pet_eval_cfg, sc_model_cfg, sc_train_cfg, sc_eval_cfg,
-                      pattern_ids=args.pattern_ids, output_dir=args.output_dir,
-                      ensemble_repetitions=args.pet_repetitions, final_repetitions=args.sc_repetitions,
-                      reduction=args.reduction, train_data=train_data, unlabeled_data=unlabeled_data,
-                      eval_data=eval_data, do_train=args.do_train, do_eval=args.do_eval,
-                      no_distillation=args.no_distillation, seed=args.seed)
-
-    elif args.method == 'ipet':
-        pet.train_ipet(pet_model_cfg, pet_train_cfg, pet_eval_cfg, ipet_cfg, sc_model_cfg, sc_train_cfg, sc_eval_cfg,
-                       pattern_ids=args.pattern_ids, output_dir=args.output_dir,
-                       ensemble_repetitions=args.pet_repetitions, final_repetitions=args.sc_repetitions,
-                       reduction=args.reduction, train_data=train_data, unlabeled_data=unlabeled_data,
-                       eval_data=eval_data, do_train=args.do_train, do_eval=args.do_eval, seed=args.seed)
-
-    elif args.method == 'sequence_classifier':
-        pet.train_classifier(sc_model_cfg, sc_train_cfg, sc_eval_cfg, output_dir=args.output_dir,
-                             repetitions=args.sc_repetitions, train_data=train_data, unlabeled_data=unlabeled_data,
-                             eval_data=eval_data, do_train=args.do_train, do_eval=args.do_eval, seed=args.seed)
-
+    if args.method == 'single':
+        train_pet_one_model(pet_model_cfg, pet_train_cfg, pet_eval_cfg, args.pattern_ids, args.output_dir,
+                        repetitions=args.pet_repetitions, train_data=train_data, unlabeled_data=None,
+                        eval_data=eval_data, do_train=args.do_train, do_eval=args.do_eval,
+                        save_unlabeled_logits=not args.no_distillation, seed=args.seed)
     else:
         raise ValueError(f"Training method '{args.method}' not implemented")
-
 
 if __name__ == "__main__":
     main()

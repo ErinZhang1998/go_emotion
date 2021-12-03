@@ -64,6 +64,8 @@ class PVP(ABC):
 
     def _build_mlm_logits_to_cls_logits_tensor(self):
         label_list = self.wrapper.config.label_list
+        import pdb; pdb.set_trace()
+
         m2c_tensor = torch.ones([len(label_list), self.max_num_verbalizers], dtype=torch.long) * -1
 
         for label_idx, label in enumerate(label_list):
@@ -256,64 +258,26 @@ class PVP(ABC):
 
         return verbalize
 
-class EkmanFinetunePVP(PVP):
-    # anger disgust fear joy sadness surprise
+class EkmanPVP(PVP):
     VERBALIZER = {
-        "0": ["anger"],
-        "1": ["disgust"],
-        "2": ["fear"],
-        "3": ["joy"],
-        "4": ["sadness"],
-        "5": ["surprise"],
-        "6" : ["neutral"],
+        "0": ["Yes"],
+        "1": ["No"],
+        "2": ["No"],
+        "3": ["No"],
+        
     }
 
     def get_parts(self, example: InputExample) -> FilledPattern:
-
         text_a = self.shortenable(example.text_a)
-        text_b = self.shortenable(example.text_b)
 
         if self.pattern_id == 0:
-            return ["I feel:", self.mask, '.', text_a, text_b], []
+            return ["Do you feel anger, annoyance, or disapproval?", self.mask, '.', text_a], []
         else:
             raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
 
     def verbalize(self, label) -> List[str]:
-        return EkmanFinetunePVP.VERBALIZER[label]
-
-
-class AgnewsPVP(PVP):
-    VERBALIZER = {
-        "1": ["World"],
-        "2": ["Sports"],
-        "3": ["Business"],
-        "4": ["Tech"]
-    }
-
-    def get_parts(self, example: InputExample) -> FilledPattern:
-
-        text_a = self.shortenable(example.text_a)
-        text_b = self.shortenable(example.text_b)
-
-        if self.pattern_id == 0:
-            return [self.mask, ':', text_a, text_b], []
-        elif self.pattern_id == 1:
-            return [self.mask, 'News:', text_a, text_b], []
-        elif self.pattern_id == 2:
-            return [text_a, '(', self.mask, ')', text_b], []
-        elif self.pattern_id == 3:
-            return [text_a, text_b, '(', self.mask, ')'], []
-        elif self.pattern_id == 4:
-            return ['[ Category:', self.mask, ']', text_a, text_b], []
-        elif self.pattern_id == 5:
-            return [self.mask, '-', text_a, text_b], []
-        else:
-            raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
-
-    def verbalize(self, label) -> List[str]:
-        return AgnewsPVP.VERBALIZER[label]
+        return EkmanPVP.VERBALIZER[label]
 
 PVPS = {
-    'ekman-finetune' : EkmanFinetunePVP,
-    'agnews': AgnewsPVP,
+    'ekman' : EkmanPVP,
 }
