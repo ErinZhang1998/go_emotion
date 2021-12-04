@@ -1,4 +1,7 @@
 import pandas as pd 
+import requests
+import os
+import json
 
 GO_EMOTIONS_LABELS = [
     'admiration','amusement','anger','annoyance','approval','caring','confusion','curiosity','desire','disappointment','disapproval','disgust','embarrassment','excitement','fear','gratitude','grief','joy','love','nervousness','optimism','pride','realization','relief','remorse','sadness','surprise','neutral',
@@ -222,6 +225,84 @@ def read5(text_file, emotion_file, yes_emotion):
     return df 
 
 
+bearer_token = "AAAAAAAAAAAAAAAAAAAAAJEgWgEAAAAAV4cVChcIzi5NyIPZP01LJGQqRlc%3DafKh0vqSW7SNM6VyCrSL6ZVc6cjpB1ZE0NceqOPgWLfVVSdfJo"
+
+def bearer_oauth(r):
+    r.headers["Authorization"] = f"Bearer {bearer_token}"
+    r.headers["User-Agent"] = "v2TweetLookupPython"
+    return r
+
+def connect_to_endpoint(url):
+    response = requests.request("GET", url, auth=bearer_oauth)
+    print(response.status_code)
+    if response.status_code != 200:
+        raise Exception(
+            "Request returned an error: {} {}".format(
+                response.status_code, response.text
+            )
+        )
+    return response.json()
+
+def clean_tweet(twt, exclude):
+    parts = twt.split(" ")
+    new_parts = []
+    for p in parts:
+        if not "#"+exclude in p.lower():
+            if not "https" in p.lower():
+                new_parts.append(p)
+    
+    new_text = " ".join(new_parts)
+    new_text = new_text.replace("\n", "")
+    return new_text
+
+def read6(path, yes_emotion):
+    fh = open(path, "r")
+    L = fh.readlines()
+
+    tweet_fields = "tweet.fields="
+    url_template = "https://api.twitter.com/2/tweets?{}&{}" #.format(ids, tweet_fields)
+
+    
+    labels_raw_dict = {}
+    twt_ids = []
+    for line in L:
+        line = line.strip()
+        parts = line.split("|")
+        
+        twt_id = parts[0]
+        twt_ids += [twt_id]
+        labels_raw_dict[twt_id] = parts[-1].strip()
+    
+    batch_size = 50
+    query_times = len(twt_ids) // batch_size 
+    if(len(twt_ids) % batch_size != 0):
+        query_times += 1
+    
+    texts = []
+    labels = []
+    for t in range(query_times):
+        end_idx = (t+1) * batch_size if (t+1) * batch_size < len(twt_ids) else len(twt_ids)
+        ids_text_list = twt_ids[t*batch_size : end_idx]
+        ids_text = ",".join(ids_text_list)
+        ids = "ids={}".format(ids_text)
+        url = url_template.format(ids, tweet_fields)
+        json_response = connect_to_endpoint(url)
+        for data_i in json_response['data']:
+            text = data_i['text']
+            text = clean_tweet(text, "sad")
+            text = clean_tweet(text, "happy")
+            texts.append(text)
+
+            l = labels_raw_dict[data_i['id']]
+            if(l == yes_emotion):
+                labels.append("1")
+            else:
+                labels.append("0")
+        
+    df = pd.DataFrame({'text': texts,
+                   'label': labels})
+    df = df.sample(frac=1).reset_index(drop=True)
+    return df 
 
 def merge(paths):
     texts = []
