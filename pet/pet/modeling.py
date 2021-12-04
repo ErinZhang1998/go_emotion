@@ -21,7 +21,7 @@ from typing import List, Dict
 
 import numpy as np
 import torch
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, recall_score, precision_score
 from transformers.data.metrics import simple_accuracy
 
 import log
@@ -325,7 +325,7 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
     wrapper = TransformerModelWrapper(model_config, False)
 
     for pattern_id in pattern_ids:
-        for iteration in range(repetitions):
+        for iteration in range(1):
 
             wrapper.init_preprocessor(pattern_id)
 
@@ -334,9 +334,9 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
 
             pattern_iter_output_dir = "{}/p{}-i{}".format(output_dir, pattern_id, iteration)
 
-            if os.path.exists(pattern_iter_output_dir):
-                logger.warning(f"Path {pattern_iter_output_dir} already exists, skipping it...")
-                continue
+            # if os.path.exists(pattern_iter_output_dir):
+            #     logger.warning(f"Path {pattern_iter_output_dir} already exists, skipping it...")
+            #     continue
 
             if not os.path.exists(pattern_iter_output_dir):
                 os.makedirs(pattern_iter_output_dir)
@@ -607,6 +607,12 @@ def evaluate(model: TransformerModelWrapper, eval_data: List[InputExample], conf
     for metric in metrics:
         if metric == 'acc':
             scores[metric] = simple_accuracy(predictions, results['labels'])
+        elif metric == "recall":
+            scores[metric] = recall_score(results['labels'], predictions),
+        elif metric == "precision":
+            scores[metric] = precision_score(results['labels'], predictions),
+        elif metric == "recall-macro":
+            scores[metric] = recall_score(results['labels'], predictions, average='macro'),
         elif metric == 'f1':
             scores[metric] = f1_score(results['labels'], predictions)
         elif metric == 'f1-macro':

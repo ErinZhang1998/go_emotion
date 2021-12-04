@@ -532,6 +532,8 @@ class TransformerModelWrapper:
         """Perform a MLM evaluation step."""
         inputs = self.generate_default_inputs(batch)
         outputs = self.model(**inputs)
+        # import pdb; pdb.set_trace()
+
         return self.preprocessor.pvp.convert_mlm_logits_to_cls_logits(batch['mlm_labels'], outputs[0])
 
     def plm_eval_step(self, batch: Dict[str, torch.Tensor]) -> torch.Tensor:

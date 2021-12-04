@@ -170,7 +170,7 @@ PROCESSORS = {
 }  
 TASK_HELPERS = {}
 METRICS = {
-    'ekman' : ["acc"],
+    'ekman' : ["acc", "recall", "precision"],
     'goemotions' : ["acc"],
 }
 
