@@ -161,6 +161,68 @@ def read3(paths, yes_emotion):
     df = df.sample(frac=1).reset_index(drop=True)
     return df 
 
+def read4(paths, yes_emotion, thresh=0.2):
+    texts = []
+    labels = []
+    for path in paths:
+        df = pd.read_csv(path, sep="\t")
+        for i in range(len(df)):
+            row = df.iloc[i]
+            texts.append(row["Tweet"])
+
+            if yes_emotion != "neutral":
+                if row["Affect Dimension"] == yes_emotion:
+                    if row["Intensity Score"] >= thresh:
+                        labels.append("1")
+                        continue
+                labels.append("0")
+            else:
+                if row["Intensity Score"] < thresh:
+                    labels.append("1")
+                else:
+                    labels.append("0")
+    
+    df = pd.DataFrame({'text': texts,
+                   'label': labels})
+    df = df.sample(frac=1).reset_index(drop=True)
+    return df 
+
+def read5(text_file, emotion_file, yes_emotion):
+    TABLE = { 0: "neutral", 1: 'anger', 2: 'disgust', 3: 'fear', 4: 'joy', 5: 'sadness', 6: 'surprise'}
+    fh1 = open(text_file, "r")
+    L1 = fh1.readlines()
+
+    fh2 = open(emotion_file, "r")
+    L2 = fh2.readlines()
+
+    texts = []
+    labels = []
+
+    assert len(L1) == len(L2)
+    for line,emo in zip(L1,L2):
+        parts = line.strip().split("__eou__")
+        emos = emo.strip().split(" ")
+
+        # print(line, parts, emos)
+
+        # print(len(parts),len(emos))
+        # assert len(parts) == len(emos)
+        
+        for part, l in zip(parts, emos):
+            texts.append(part.strip())
+            l = int(l)
+            if TABLE[l] == yes_emotion:
+                labels.append("1")
+            else:
+                labels.append("0")
+    
+    df = pd.DataFrame({'text': texts,
+                   'label': labels})
+    df = df.sample(frac=1).reset_index(drop=True)
+    return df 
+
+
+
 def merge(paths):
     texts = []
     labels = []
