@@ -110,11 +110,18 @@ def read2(paths, yes_emotion, thresh = 0.2):
             texts.append(text)
             label = parts[2].strip()
             intensity = float(parts[3].strip())
-            # print(label)
-            if(intensity >= thresh) and label == yes_emotion:
-                labels.append("1")
+            
+            if yes_emotion != "neutral":
+
+                if(intensity >= thresh) and label == yes_emotion:
+                    labels.append("1")
+                else:
+                    labels.append("0")
             else:
-                labels.append("0")
+                if(intensity < thresh):
+                    labels.append("1")
+                else:
+                    labels.append("0")
     
     df = pd.DataFrame({'text': texts,
                    'label': labels})
