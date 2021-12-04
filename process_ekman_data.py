@@ -334,6 +334,48 @@ def read7(path, yes_emotion):
     df = df.sample(frac=1).reset_index(drop=True)
     return df 
 
+def read8(paths, yes_emotion):
+    texts = []
+    labels = []
+
+    for path in paths:
+        df = pd.read_csv(path)
+        for i in range(len(df)):
+            row = df.iloc[i]
+            text =  row['Utterance']
+            texts.append(text)
+            e = row['Emotion']
+            if e == yes_emotion:
+                labels.append("1")
+            else:
+                labels.append("0")
+    df = pd.DataFrame({'text': texts,'label': labels})
+    df = df.sample(frac=1).reset_index(drop=True)
+    return df
+
+def read9(path, yes_emotion):
+    texts = []
+    labels = []
+
+    fh = open(path, "r")
+    L = fh.readlines()
+
+    for line in L:
+        l = line.split("::")[1].strip()
+        text = line.split("::")[0].split(":")[1].strip()
+        texts.append(text)
+
+        if l == yes_emotion:
+            labels.append("1")
+        else:
+            labels.append("0")
+    
+    df = pd.DataFrame({'text': texts,'label': labels})
+    df = df.sample(frac=1).reset_index(drop=True)
+    return df
+    
+
+
 def merge(paths):
     texts = []
     labels = []
