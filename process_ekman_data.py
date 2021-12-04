@@ -130,6 +130,37 @@ def read2(paths, yes_emotion, thresh = 0.2):
     
     return df 
 
+def read3(paths, yes_emotion):
+    texts = []
+    labels = []
+    for path in paths:
+        df = pd.read_csv(path, sep="\t")
+        for i in range(len(df)):
+            row = df.iloc[i]
+            texts.append(row["Tweet"])
+
+            if yes_emotion != "neutral":
+                if yes_emotion in row:
+                    if str(row[yes_emotion]) == "1":
+                        labels.append("1")
+                        continue 
+                labels.append("0")
+            else:
+                all_not_set = True 
+                for k,v in row.items():
+                    if str(v) == "1" or str(v) == "0":
+                        if str(v) == "1":
+                            all_not_set = False 
+                if all_not_set:
+                    labels.append("1")
+                else:
+                    labels.append("0")
+    
+    df = pd.DataFrame({'text': texts,
+                   'label': labels})
+    df = df.sample(frac=1).reset_index(drop=True)
+    return df 
+
 def merge(paths):
     texts = []
     labels = []
