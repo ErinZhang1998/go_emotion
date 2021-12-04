@@ -26,7 +26,7 @@ from transformers.data.metrics import simple_accuracy
 
 import log
 from pet.utils import InputExample, exact_match, save_logits, save_predictions, softmax, LogitsList, set_seed, eq_div
-from pet.wrapper import TransformerModelWrapper, SEQUENCE_CLASSIFIER_WRAPPER, WrapperConfig
+from pet.wrapper import TransformerModelWrapper, WrapperConfig
 
 logger = log.get_logger('root')
 
@@ -351,6 +351,8 @@ def _write_results(path: str, results: Dict):
     with open(path, 'w') as fh:
         for metric in results.keys():
             for pattern_id, values in results[metric].items():
+                import pdb; pdb.set_trace()
+
                 mean = statistics.mean(values)
                 stdev = statistics.stdev(values) if len(values) > 1 else 0
                 result_str = "{}-p{}: {} +- {}".format(metric, pattern_id, mean, stdev)

@@ -44,12 +44,10 @@ SEQUENCE_CLASSIFIER_WRAPPER = "sequence_classifier"
 MLM_WRAPPER = "mlm"
 PLM_WRAPPER = "plm"
 
-WRAPPER_TYPES = [SEQUENCE_CLASSIFIER_WRAPPER, MLM_WRAPPER, PLM_WRAPPER]
+WRAPPER_TYPES = [MLM_WRAPPER]
 
 PREPROCESSORS = {
-    SEQUENCE_CLASSIFIER_WRAPPER: preprocessor.SequenceClassifierPreprocessor,
     MLM_WRAPPER: preprocessor.MLMPreprocessor,
-    PLM_WRAPPER: preprocessor.PLMPreprocessor,
 }
 
 MODEL_CLASSES = {
@@ -89,19 +87,6 @@ MODEL_CLASSES = {
         MLM_WRAPPER: GPT2LMHeadModel
     },
 }
-
-EVALUATION_STEP_FUNCTIONS = {
-    MLM_WRAPPER: lambda wrapper: wrapper.mlm_eval_step,
-    PLM_WRAPPER: lambda wrapper: wrapper.plm_eval_step,
-    SEQUENCE_CLASSIFIER_WRAPPER: lambda wrapper: wrapper.sequence_classifier_eval_step,
-}
-
-TRAIN_STEP_FUNCTIONS = {
-    MLM_WRAPPER: lambda wrapper: wrapper.mlm_train_step,
-    PLM_WRAPPER: lambda wrapper: wrapper.plm_train_step,
-    SEQUENCE_CLASSIFIER_WRAPPER: lambda wrapper: wrapper.sequence_classifier_train_step,
-}
-
 
 class WrapperConfig(object):
     """A configuration for a :class:`TransformerModelWrapper`."""
