@@ -40,53 +40,27 @@ def load_pet_configs(args) -> Tuple[WrapperConfig, pet.TrainConfig, pet.EvalConf
                               max_seq_length=args.pet_max_seq_length, verbalizer_file=args.verbalizer_file,
                               cache_dir=args.cache_dir)
 
-    train_cfg = pet.TrainConfig(device=args.device, per_gpu_train_batch_size=args.pet_per_gpu_train_batch_size,
-                                per_gpu_unlabeled_batch_size=args.pet_per_gpu_unlabeled_batch_size, n_gpu=args.n_gpu,
-                                num_train_epochs=args.pet_num_train_epochs, max_steps=args.pet_max_steps,
-                                gradient_accumulation_steps=args.pet_gradient_accumulation_steps,
-                                weight_decay=args.weight_decay, learning_rate=args.learning_rate,
-                                adam_epsilon=args.adam_epsilon, warmup_steps=args.warmup_steps,
-                                max_grad_norm=args.max_grad_norm, lm_training=args.lm_training, alpha=args.alpha)
+    train_cfg = pet.TrainConfig(
+        device=args.device, 
+        per_gpu_train_batch_size=args.pet_per_gpu_train_batch_size,
+        per_gpu_unlabeled_batch_size=args.pet_per_gpu_unlabeled_batch_size, 
+        n_gpu=args.n_gpu,
+        num_train_epochs=args.pet_num_train_epochs, max_steps=args.pet_max_steps,
+        gradient_accumulation_steps=args.pet_gradient_accumulation_steps,
+        weight_decay=args.weight_decay, 
+        learning_rate=args.learning_rate,
+        adam_epsilon=args.adam_epsilon, 
+        warmup_steps=args.warmup_steps,
+        max_grad_norm=args.max_grad_norm, 
+        lm_training=args.lm_training, 
+        alpha=args.alpha
+    )
 
     eval_cfg = pet.EvalConfig(device=args.device, n_gpu=args.n_gpu, metrics=args.metrics,
                               per_gpu_eval_batch_size=args.pet_per_gpu_eval_batch_size,
                               decoding_strategy=args.decoding_strategy, priming=args.priming)
 
     return model_cfg, train_cfg, eval_cfg
-
-
-def load_sequence_classifier_configs(args) -> Tuple[WrapperConfig, pet.TrainConfig, pet.EvalConfig]:
-    """
-    Load the model, training and evaluation configs for a regular sequence classifier from the given command line
-    arguments. This classifier can either be used as a standalone model or as the final classifier for PET/iPET.
-    """
-    model_cfg = WrapperConfig(model_type=args.model_type, model_name_or_path=args.model_name_or_path,
-                              wrapper_type=SEQUENCE_CLASSIFIER_WRAPPER, task_name=args.task_name,
-                              label_list=args.label_list, max_seq_length=args.sc_max_seq_length,
-                              verbalizer_file=args.verbalizer_file, cache_dir=args.cache_dir)
-
-    train_cfg = pet.TrainConfig(device=args.device, per_gpu_train_batch_size=args.sc_per_gpu_train_batch_size,
-                                per_gpu_unlabeled_batch_size=args.sc_per_gpu_unlabeled_batch_size, n_gpu=args.n_gpu,
-                                num_train_epochs=args.sc_num_train_epochs, max_steps=args.sc_max_steps,
-                                temperature=args.temperature,
-                                gradient_accumulation_steps=args.sc_gradient_accumulation_steps,
-                                weight_decay=args.weight_decay, learning_rate=args.learning_rate,
-                                adam_epsilon=args.adam_epsilon, warmup_steps=args.warmup_steps,
-                                max_grad_norm=args.max_grad_norm, use_logits=args.method != 'sequence_classifier')
-
-    eval_cfg = pet.EvalConfig(device=args.device, n_gpu=args.n_gpu, metrics=args.metrics,
-                              per_gpu_eval_batch_size=args.sc_per_gpu_eval_batch_size)
-
-    return model_cfg, train_cfg, eval_cfg
-
-
-def load_ipet_config(args) -> pet.IPetConfig:
-    """
-    Load the iPET config from the given command line arguments.
-    """
-    ipet_cfg = pet.IPetConfig(generations=args.ipet_generations, logits_percentage=args.ipet_logits_percentage,
-                              scale_factor=args.ipet_scale_factor, n_most_likely=args.ipet_n_most_likely)
-    return ipet_cfg
 
 
 def main():

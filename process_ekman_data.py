@@ -98,6 +98,31 @@ def read1(tweet_fs, emotion_fs, yes_emotion, thresh = 20):
     
     return df
 
+def read2(paths, yes_emotion, thresh = 0.2):
+    texts = []
+    labels = []
+    for path in paths:
+        fh = open(path, "r")
+        L1 = fh.readlines()
+        for line in L1:
+            parts = line.split("\t")
+            text = parts[1].strip()
+            texts.append(text)
+            label = parts[2].strip()
+            intensity = float(parts[3].strip())
+            # print(label)
+            if(intensity >= thresh) and label == yes_emotion:
+                labels.append("1")
+            else:
+                labels.append("0")
+    
+    df = pd.DataFrame({'text': texts,
+                   'label': labels})
+    df = df.sample(frac=1).reset_index(drop=True)
+
+    
+    return df 
+
 def merge(paths):
     texts = []
     labels = []
