@@ -299,8 +299,38 @@ def read6(path, yes_emotion):
             else:
                 labels.append("0")
         
-    df = pd.DataFrame({'text': texts,
-                   'label': labels})
+    df = pd.DataFrame({'text': texts,'label': labels})
+    df = df.sample(frac=1).reset_index(drop=True)
+    return df 
+
+def read7(path, yes_emotion):
+    emos = ["happy", "sad", "anger", "fear", "surprise", "disgust", "shame"]
+    fh = open(path, "r")
+    L = fh.readlines()
+
+    texts = []
+    labels = []
+
+    for line in L:
+        line = line.strip()
+        line = line.replace("<cause>", "")
+        line = line.replace("<\cause>", "")
+
+        emo_in = []
+        for emo in emos:
+            exclude = "<{}>".format(emo)
+            if exclude in line:
+                line = line.replace(exclude, "")
+                exclude = "<\{}>".format(emo)
+                line = line.replace(exclude, "")
+                emo_in.append(emo)
+        texts.append(line)
+        if yes_emotion in emo_in:
+            labels.append("1")
+        else:
+            labels.append("0")
+    
+    df = pd.DataFrame({'text': texts,'label': labels})
     df = df.sample(frac=1).reset_index(drop=True)
     return df 
 
@@ -308,11 +338,19 @@ def merge(paths):
     texts = []
     labels = []
     
+    none_exist = True
     for path in paths:
+        if not os.path.exists(path):
+            print(path, " does not exist!")
+            continue
+
         df = pd.read_csv(path)
         texts += list(df['text'].to_numpy())
         labels += list(df['label'].to_numpy())
+        none_exist = False
     
+    assert not none_exist
+
     df = pd.DataFrame({'text': texts,
                    'label': labels})
     
