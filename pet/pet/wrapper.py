@@ -204,50 +204,11 @@ class TransformerModelWrapper:
               logging_steps: int = 50, per_gpu_unlabeled_batch_size: int = 8, unlabeled_data: List[InputExample] = None,
               lm_training: bool = False, use_logits: bool = False, alpha: float = 0.8, temperature: float = 1,
               max_steps=-1, **_):
-        """
-        Train the underlying language model.
-
-        :param task_train_data: the training examples to use
-        :param device: the training device (cpu/gpu)
-        :param per_gpu_train_batch_size: the number of training examples per batch and gpu
-        :param n_gpu: the number of gpus to use
-        :param num_train_epochs: the number of epochs to train
-        :param gradient_accumulation_steps: the number of gradient accumulation steps before performing an update
-        :param weight_decay: the weight decay to use
-        :param learning_rate: the learning rate to use
-        :param adam_epsilon: epsilon parameter for the Adam optimizer
-        :param warmup_steps: the number of warmup steps
-        :param max_grad_norm: the maximum norm for the gradient
-        :param logging_steps: the number of steps after which logging information is printed
-        :param per_gpu_unlabeled_batch_size: the number of unlabeled examples per batch and gpu
-        :param unlabeled_data: the unlabeled examples to use
-        :param lm_training: whether to perform auxiliary language modeling (only for MLMs)
-        :param use_logits: whether to use the example's logits instead of their labels to compute the loss
-        :param alpha: the alpha parameter for auxiliary language modeling
-        :param temperature: the temperature for knowledge distillation
-        :param max_steps: the maximum number of training steps, overrides ``num_train_epochs``
-        :return: a tuple consisting of the total number of steps and the average training loss
-        """
-
+              
         train_batch_size = per_gpu_train_batch_size * max(1, n_gpu)
         train_dataset = self._generate_dataset(task_train_data)
         train_sampler = RandomSampler(train_dataset)
         train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=train_batch_size)
-
-        unlabeled_dataloader, unlabeled_iter = None, None
-
-        if lm_training or use_logits:
-            # we need unlabeled data both for auxiliary language modeling and for knowledge distillation
-            assert unlabeled_data is not None
-            unlabeled_batch_size = per_gpu_unlabeled_batch_size * max(1, n_gpu)
-            unlabeled_dataset = self._generate_dataset(unlabeled_data, labelled=False)
-            unlabeled_sampler = RandomSampler(unlabeled_dataset)
-            unlabeled_dataloader = DataLoader(unlabeled_dataset, sampler=unlabeled_sampler,
-                                              batch_size=unlabeled_batch_size)
-            unlabeled_iter = unlabeled_dataloader.__iter__()
-
-        if use_logits:
-            train_dataloader = unlabeled_dataloader
 
         if max_steps > 0:
             t_total = max_steps
@@ -265,8 +226,16 @@ class TransformerModelWrapper:
         ]
 
         optimizer = AdamW(optimizer_grouped_parameters, lr=learning_rate, eps=adam_epsilon)
-        scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps,
-                                                    num_training_steps=t_total)
+        # scheduler = get_linear_schedule_with_warmup(
+        #     optimizer, 
+        #     num_warmup_steps=warmup_steps,
+        #     num_training_steps=t_total,
+        # )
+        scheduler = get_linear_schedule_with_warmup(
+            optimizer, 
+            num_warmup_steps=int((len(train_dataloader) * int(num_train_epochs)) / 10), 
+            num_training_steps=t_total,
+        )
 
         # multi-gpu training
         if n_gpu > 1:
@@ -284,30 +253,15 @@ class TransformerModelWrapper:
             epoch_iterator = tqdm(train_dataloader, desc="Iteration")
             for _, batch in enumerate(epoch_iterator):
                 self.model.train()
-                unlabeled_batch = None
-
                 batch = {k: t.to(device) for k, t in batch.items()}
-
-                if lm_training:
-                    while unlabeled_batch is None:
-                        try:
-                            unlabeled_batch = unlabeled_iter.__next__()
-                        except StopIteration:
-                            logger.info("Resetting unlabeled dataset")
-                            unlabeled_iter = unlabeled_dataloader.__iter__()
-
-                    lm_input_ids = unlabeled_batch['input_ids']
-                    unlabeled_batch['input_ids'], unlabeled_batch['mlm_labels'] = self._mask_tokens(lm_input_ids)
-                    unlabeled_batch = {k: t.to(device) for k, t in unlabeled_batch.items()}
-
                 train_step_inputs = {
-                    'unlabeled_batch': unlabeled_batch, 'lm_training': lm_training, 'alpha': alpha,
-                    'use_logits': use_logits, 'temperature': temperature
+                    'unlabeled_batch': None, 
+                    'lm_training': False, 
+                    'alpha': alpha,
+                    'use_logits': False, 
+                    'temperature': temperature,
                 }
-                loss = self.task_helper.train_step(batch, **train_step_inputs) if self.task_helper else None
-
-                if loss is None:
-                    loss = TRAIN_STEP_FUNCTIONS[self.config.wrapper_type](self)(batch, **train_step_inputs)
+                loss = self.mlm_train_step(batch, **train_step_inputs)
 
                 if n_gpu > 1:
                     loss = loss.mean()  # mean() to average on multi-gpu parallel training
@@ -383,7 +337,7 @@ class TransformerModelWrapper:
                                                     decoding_strategy=decoding_strategy) if self.task_helper else None
 
                 if logits is None:
-                    logits = EVALUATION_STEP_FUNCTIONS[self.config.wrapper_type](self)(batch)
+                    logits = self.mlm_eval_step(batch)
 
             if preds is None:
                 preds = logits.detach().cpu().numpy()
@@ -416,13 +370,7 @@ class TransformerModelWrapper:
             'logits': torch.tensor([f.logits for f in features], dtype=torch.float),
             'idx': torch.tensor([f.idx for f in features], dtype=torch.long)
         }
-        if self.config.wrapper_type == PLM_WRAPPER:
-            feature_dict['perm_mask'] = torch.tensor([f.perm_mask for f in features], dtype=torch.float)
-            feature_dict['target_mapping'] = torch.tensor([f.target_mapping for f in features], dtype=torch.float)
-
-        if self.task_helper:
-            self.task_helper.add_features_to_dict(features, feature_dict)
-
+        
         return DictDataset(**feature_dict)
 
     def _convert_examples_to_features(self, examples: List[InputExample], labelled: bool = True,
@@ -432,44 +380,11 @@ class TransformerModelWrapper:
             if ex_index % 10000 == 0:
                 logger.info("Writing example {}".format(ex_index))
             input_features = self.preprocessor.get_input_features(example, labelled=labelled, priming=priming)
-            if self.task_helper:
-                self.task_helper.add_special_input_features(example, input_features)
             features.append(input_features)
             if ex_index < 5:
                 logger.info(f'--- Example {ex_index} ---')
                 logger.info(input_features.pretty_print(self.tokenizer))
         return features
-
-    def _mask_tokens(self, input_ids):
-        """ Prepare masked tokens inputs/labels for masked language modeling: 80% MASK, 10% random, 10% original. """
-        labels = input_ids.clone()
-        # We sample a few tokens in each sequence for masked-LM training (with probability 0.15)
-        probability_matrix = torch.full(labels.shape, 0.15)
-        special_tokens_mask = [self.tokenizer.get_special_tokens_mask(val, already_has_special_tokens=True) for val in
-                               labels.tolist()]
-        probability_matrix.masked_fill_(torch.tensor(special_tokens_mask, dtype=torch.bool), value=0.0)
-
-        masked_indices = torch.bernoulli(probability_matrix).bool()
-
-        # if a version of transformers < 2.4.0 is used, -1 is the expected value for indices to ignore
-        if [int(v) for v in transformers_version.split('.')][:3] >= [2, 4, 0]:
-            ignore_value = -100
-        else:
-            ignore_value = -1
-
-        labels[~masked_indices] = ignore_value  # We only compute loss on masked tokens
-
-        # 80% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
-        indices_replaced = torch.bernoulli(torch.full(labels.shape, 0.8)).bool() & masked_indices
-        input_ids[indices_replaced] = self.tokenizer.convert_tokens_to_ids(self.tokenizer.mask_token)
-
-        # 10% of the time, we replace masked input tokens with random word
-        indices_random = torch.bernoulli(torch.full(labels.shape, 0.5)).bool() & masked_indices & ~indices_replaced
-        random_words = torch.randint(len(self.tokenizer), labels.shape, dtype=torch.long)
-        input_ids[indices_random] = random_words[indices_random]
-
-        # The rest of the time (10% of the time) we keep the masked input tokens unchanged
-        return input_ids, labels
 
     def generate_default_inputs(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         """Generate the default inputs required by almost every language model."""
@@ -490,43 +405,7 @@ class TransformerModelWrapper:
         prediction_scores = self.preprocessor.pvp.convert_mlm_logits_to_cls_logits(mlm_labels, outputs[0])
         loss = nn.CrossEntropyLoss()(prediction_scores.view(-1, len(self.config.label_list)), labels.view(-1))
 
-        if lm_training:
-            lm_inputs = self.generate_default_inputs(unlabeled_batch)
-            lm_inputs['masked_lm_labels'] = unlabeled_batch['mlm_labels']
-            lm_loss = self.model(**lm_inputs)[0]
-            loss = alpha * loss + (1 - alpha) * lm_loss
         return loss
-
-    def plm_train_step(self, labeled_batch: Dict[str, torch.Tensor], lm_training: bool = False, **_):
-        """Perform a PLM training step."""
-
-        inputs = self.generate_default_inputs(labeled_batch)
-        inputs['perm_mask'], inputs['target_mapping'] = labeled_batch['perm_mask'], labeled_batch['target_mapping']
-        labels = labeled_batch['labels']
-        outputs = self.model(**inputs)
-        prediction_scores = self.preprocessor.pvp.convert_plm_logits_to_cls_logits(outputs[0])
-        loss = nn.CrossEntropyLoss()(prediction_scores.view(-1, len(self.config.label_list)), labels.view(-1))
-
-        if lm_training:
-            raise NotImplementedError("Language model training is currently not implemented for PLMs")
-
-        return loss
-
-    def sequence_classifier_train_step(self, batch: Dict[str, torch.Tensor], use_logits: bool = False,
-                                       temperature: float = 1, **_) -> torch.Tensor:
-        """Perform a sequence classifier training step."""
-
-        inputs = self.generate_default_inputs(batch)
-        if not use_logits:
-            inputs['labels'] = batch['labels']
-
-        outputs = self.model(**inputs)
-
-        if use_logits:
-            logits_predicted, logits_target = outputs[0], batch['logits']
-            return distillation_loss(logits_predicted, logits_target, temperature)
-        else:
-            return outputs[0]
 
     def mlm_eval_step(self, batch: Dict[str, torch.Tensor]) -> torch.Tensor:
         """Perform a MLM evaluation step."""
@@ -535,15 +414,3 @@ class TransformerModelWrapper:
         # import pdb; pdb.set_trace()
 
         return self.preprocessor.pvp.convert_mlm_logits_to_cls_logits(batch['mlm_labels'], outputs[0])
-
-    def plm_eval_step(self, batch: Dict[str, torch.Tensor]) -> torch.Tensor:
-        """Perform a PLM evaluation step."""
-        inputs = self.generate_default_inputs(batch)
-        inputs['perm_mask'], inputs['target_mapping'] = batch['perm_mask'], batch['target_mapping']
-        outputs = self.model(**inputs)
-        return self.preprocessor.pvp.convert_plm_logits_to_cls_logits(outputs[0])
-
-    def sequence_classifier_eval_step(self, batch: Dict[str, torch.Tensor]) -> torch.Tensor:
-        """Perform a sequence classifier evaluation step."""
-        inputs = self.generate_default_inputs(batch)
-        return self.model(**inputs)[0]
