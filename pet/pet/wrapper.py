@@ -492,6 +492,9 @@ class TransformerModelWrapper:
 
         outputs = self.model(**inputs)
         prediction_scores = self.preprocessor.pvp.convert_mlm_logits_to_cls_logits(mlm_labels, outputs[0])
+        labels = labels.float()
+
+        # from pdb import set_trace as bp; bp()
         if self.config.multi_label:
             loss = nn.BCEWithLogitsLoss()(prediction_scores, labels)
         else:

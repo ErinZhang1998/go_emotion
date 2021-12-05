@@ -89,7 +89,8 @@ class MLMPreprocessor(Preprocessor):
                 label[int(label_cls)] = 1
         else:
             label = self.label_map[example.label] if example.label is not None else -100
-        
+
+        # from pdb import set_trace as bp; bp()
         logits = example.logits if example.logits else [-1]
 
         if labelled:

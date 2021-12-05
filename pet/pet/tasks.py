@@ -172,7 +172,7 @@ class CombinedDataProcessor(DataProcessor):
 
     UNLABELED_FILE_NAME = "unlabeled.csv"
 
-    LABELS = ['0', '1', '2', '3', '4', '5']
+    LABELS = ['0', '1', '2', '3', '4']
 
     TEXT_A_COLUMN = 0
     TEXT_B_COLUMN = -1
@@ -197,9 +197,10 @@ class CombinedDataProcessor(DataProcessor):
         examples = []
 
         with open(path) as f:
-            reader = csv.reader(f, delimiter='\t')
+            reader = csv.reader(f, delimiter=',')
             next(reader, None) # skip headers
             for idx, row in enumerate(reader):
+                # from pdb import set_trace as bp; bp()
                 guid = "%s-%s" % (set_type, idx)
                 label = row[CombinedDataProcessor.LABEL_COLUMN]
                 text_a = row[CombinedDataProcessor.TEXT_A_COLUMN]
