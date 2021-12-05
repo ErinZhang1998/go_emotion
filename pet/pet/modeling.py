@@ -21,7 +21,7 @@ from typing import List, Dict
 
 import numpy as np
 import torch
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, recall_score, precision_score
 from transformers.data.metrics import simple_accuracy
 
 import log
@@ -341,6 +341,7 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
             if not os.path.exists(pattern_iter_output_dir):
                 os.makedirs(pattern_iter_output_dir)
 
+            # from pdb import set_trace as bp; bp()
             # Training
             if do_train:
                 ipet_train_data = None
@@ -399,7 +400,7 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
 
     if do_eval:
         logger.info("=== OVERALL RESULTS ===")
-        _write_results(os.path.join(output_dir, 'result_test.txt'), results)
+        # _write_results(os.path.join(output_dir, 'result_test.txt'), results)
     else:
         logger.info("=== ENSEMBLE TRAINING COMPLETE ===")
 
@@ -479,8 +480,8 @@ def train_pet_ensemble(model_config: WrapperConfig, train_config: TrainConfig, e
                     save_logits(os.path.join(pattern_iter_output_dir, 'logits.txt'), logits)
 
                 if not do_eval:
-                    wrapper.model = None
-                    wrapper = None
+                    # wrapper.model = None
+                    # wrapper = None
                     torch.cuda.empty_cache()
 
             # Evaluation
@@ -505,8 +506,8 @@ def train_pet_ensemble(model_config: WrapperConfig, train_config: TrainConfig, e
                 for metric, value in scores.items():
                     results[metric][pattern_id].append(value)
 
-                wrapper.model = None
-                wrapper = None
+                # wrapper.model = None
+                # wrapper = None
                 torch.cuda.empty_cache()
 
     if do_eval:
@@ -600,6 +601,7 @@ def evaluate(model: TransformerModelWrapper, eval_data: List[InputExample], conf
     model.model.to(device)
     results = model.eval(eval_data, device, per_gpu_eval_batch_size=config.per_gpu_eval_batch_size,
                          n_gpu=config.n_gpu, decoding_strategy=config.decoding_strategy, priming=config.priming)
+    # from pdb import set_trace as bp; bp()
 
     predictions = np.argmax(results['logits'], axis=1)
     scores = {}
@@ -607,6 +609,12 @@ def evaluate(model: TransformerModelWrapper, eval_data: List[InputExample], conf
     for metric in metrics:
         if metric == 'acc':
             scores[metric] = simple_accuracy(predictions, results['labels'])
+        elif metric == "recall":
+            scores[metric] = recall_score(results['labels'], predictions),
+        elif metric == "precision":
+            scores[metric] = precision_score(results['labels'], predictions),
+        elif metric == "recall-macro":
+            scores[metric] = recall_score(results['labels'], predictions, average='macro'),
         elif metric == 'f1':
             scores[metric] = f1_score(results['labels'], predictions)
         elif metric == 'f1-macro':

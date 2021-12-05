@@ -267,13 +267,40 @@ class BinaryPVP(PVP):
         text_a = self.shortenable(example.text_a)
 
         if self.pattern_id == 0:
-            return [text_a, "." , "So you feel anger, annoyance, or disapproval?", self.mask, "."], []
+            # "joy", "amusement", "approval", "excitement", "gratitude",  "love", "optimism", "relief", "pride", "admiration", "desire", "caring"
+            return [text_a, ".", "Does the previous sentence express joy, amusement, approval, excitement, gratitude, love, optimism, relief, pride, admiration, desire, or caring? Yes or No?", self.mask], []
+        elif self.pattern_id == 1:
+            return [text_a, ".", "Does the previous sentence express anger, annoyance, or disapproval? Yes or No?", self.mask], []
         else:
             raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
 
     def verbalize(self, label) -> List[str]:
         return BinaryPVP.VERBALIZER[label]
 
+class CombinedPVP(PVP):
+    TASK_NAME = "combined"
+
+    VERBALIZER = {
+        '0': 'anger', \
+        '1': 'fear', \
+        '2': 'joy', \
+        '3': 'sadness', \
+        '4': 'neutral', \
+    }
+
+    def get_parts(self, example: InputExample):
+        text_a = self.shortenable(example.text_a)
+
+        if self.pattern_id == 0:
+            # this corresponds to the pattern [MASK]: a b
+            return ['\"', text_a ,'\"', 'Given the previous text, how does the person feel?'], ['The person feels', self.mask]
+        else:
+            raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
+
+    def verbalize(self, label) -> List[str]:
+        return CombinedPVP.VERBALIZER[label]
+
 PVPS = {
     'ekman' : BinaryPVP,
+    'combined': CombinedPVP,
 }

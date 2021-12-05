@@ -107,7 +107,8 @@ class WrapperConfig(object):
     """A configuration for a :class:`TransformerModelWrapper`."""
 
     def __init__(self, model_type: str, model_name_or_path: str, wrapper_type: str, task_name: str, max_seq_length: int,
-                 label_list: List[str], pattern_id: int = 0, verbalizer_file: str = None, cache_dir: str = None):
+                 label_list: List[str], pattern_id: int = 0, verbalizer_file: str = None, cache_dir: str = None,
+                 multi_label: bool = False):
         """
         Create a new config.
 
@@ -130,6 +131,7 @@ class WrapperConfig(object):
         self.pattern_id = pattern_id
         self.verbalizer_file = verbalizer_file
         self.cache_dir = cache_dir
+        self.multi_label = multi_label
 
 
 class TransformerModelWrapper:
@@ -305,7 +307,7 @@ class TransformerModelWrapper:
                     'use_logits': use_logits, 'temperature': temperature
                 }
                 loss = self.task_helper.train_step(batch, **train_step_inputs) if self.task_helper else None
-
+                # from pdb import set_trace as bp; bp()
                 if loss is None:
                     loss = TRAIN_STEP_FUNCTIONS[self.config.wrapper_type](self)(batch, **train_step_inputs)
 
@@ -431,7 +433,8 @@ class TransformerModelWrapper:
         for (ex_index, example) in enumerate(examples):
             if ex_index % 10000 == 0:
                 logger.info("Writing example {}".format(ex_index))
-            input_features = self.preprocessor.get_input_features(example, labelled=labelled, priming=priming)
+            input_features = self.preprocessor.get_input_features(example, labelled=labelled, priming=priming, \
+                                                                    multi_label=self.config.multi_label)
             if self.task_helper:
                 self.task_helper.add_special_input_features(example, input_features)
             features.append(input_features)
@@ -482,13 +485,16 @@ class TransformerModelWrapper:
                        unlabeled_batch: Optional[Dict[str, torch.Tensor]] = None, lm_training: bool = False,
                        alpha: float = 0, **_) -> torch.Tensor:
         """Perform a MLM training step."""
-
+        # from pdb import set_trace as bp; bp()
         inputs = self.generate_default_inputs(labeled_batch)
         mlm_labels, labels = labeled_batch['mlm_labels'], labeled_batch['labels']
 
         outputs = self.model(**inputs)
         prediction_scores = self.preprocessor.pvp.convert_mlm_logits_to_cls_logits(mlm_labels, outputs[0])
-        loss = nn.CrossEntropyLoss()(prediction_scores.view(-1, len(self.config.label_list)), labels.view(-1))
+        if self.config.multi_label:
+            loss = nn.BCEWithLogitsLoss()(prediction_scores, labels)
+        else:
+            loss = nn.CrossEntropyLoss()(prediction_scores.view(-1, len(self.config.label_list)), labels.view(-1))
 
         if lm_training:
             lm_inputs = self.generate_default_inputs(unlabeled_batch)

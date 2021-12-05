@@ -49,6 +49,15 @@ def get_label2idx(labels):
     label2idx = {}
 
     # labels should be basically a column of the spreadsheet as a list
+    # label2idx = {'{}'.format(i) : 0 for i in range(28)}
+    # positive = [0,1,3,5,7,8,10,14,15,16,24,25]
+    # for p in positive:
+    #     label2idx[str(p)] = 1
+    # for label in labels:
+    #     if '10' in label:
+    #         label2idx[label] = 1
+    #     else:
+    #         label2idx[label] = 0
     for label in labels:
         # handle multilabel case
         if "," in label:
@@ -100,7 +109,7 @@ def numerify_dataset(dataset, tokenizer, label2idx, lower=True, roberta=False):
                     processed_label.append(label2idx[field_idx-1][label.lower()])
 
             processed_labels.append(processed_label)
-        
+        # from pdb import set_trace as bp; bp()
         if(roberta):
             processed_dataset.append(
                 tuple(

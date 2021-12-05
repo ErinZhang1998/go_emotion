@@ -163,15 +163,65 @@ class BinaryProcessor(DataProcessor):
 
         return examples
 
+class CombinedDataProcessor(DataProcessor):
+    TASK_NAME = "combined"
+
+    TRAIN_FILE_NAME = "train.csv"
+    DEV_FILE_NAME = "dev.csv"
+    TEST_FILE_NAME = "test.csv"
+
+    UNLABELED_FILE_NAME = "unlabeled.csv"
+
+    LABELS = ['0', '1', '2', '3', '4']
+
+    TEXT_A_COLUMN = 0
+    TEXT_B_COLUMN = -1
+    LABEL_COLUMN = 1
+
+    def get_train_examples(self, data_dir: str) -> List[InputExample]:
+        return self._create_examples(os.path.join(data_dir, CombinedDataProcessor.TRAIN_FILE_NAME), "train")
+
+    def get_dev_examples(self, data_dir: str) -> List[InputExample]:
+        return self._create_examples(os.path.join(data_dir, CombinedDataProcessor.DEV_FILE_NAME), "dev")
+
+    def get_test_examples(self, data_dir) -> List[InputExample]:
+        return self._create_examples(os.path.join(data_dir, CombinedDataProcessor.TEST_FILE_NAME), "test")
+
+    def get_unlabeled_examples(self, data_dir) -> List[InputExample]:
+        return self._create_examples(os.path.join(data_dir, CombinedDataProcessor.UNLABELED_FILE_NAME), "unlabeled")
+
+    def get_labels(self) -> List[str]:
+        return CombinedDataProcessor.LABELS
+
+    def _create_examples(self, path, set_type, max_examples=-1, skip_first=0):
+        examples = []
+
+        with open(path) as f:
+            reader = csv.reader(f, delimiter=',')
+            next(reader, None) # skip headers
+            for idx, row in enumerate(reader):
+                guid = "%s-%s" % (set_type, idx)
+                label = row[CombinedDataProcessor.LABEL_COLUMN]
+                text_a = row[CombinedDataProcessor.TEXT_A_COLUMN]
+                # do some additional text processing
+                # from pdb import set_trace as bp; bp()
+                text_b = row[CombinedDataProcessor.TEXT_B_COLUMN] if CombinedDataProcessor.TEXT_B_COLUMN >= 0 else None
+                example = InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label)
+                examples.append(example)
+
+        return examples
+
 # type: Dict[str,Callable[[],DataProcessor]]
 PROCESSORS = {
     'ekman' : BinaryProcessor,
     'goemotions' : BinaryProcessor,
+    'combined': CombinedDataProcessor,
 }  
 TASK_HELPERS = {}
 METRICS = {
     'ekman' : ["acc"],
     'goemotions' : ["acc"],
+    'combined': ["acc", "f1-macro", "recall-macro"],
 }
 
 DEFAULT_METRICS = ["acc"]

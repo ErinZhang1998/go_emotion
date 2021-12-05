@@ -38,7 +38,7 @@ def load_pet_configs(args) -> Tuple[WrapperConfig, pet.TrainConfig, pet.EvalConf
     model_cfg = WrapperConfig(model_type=args.model_type, model_name_or_path=args.model_name_or_path,
                               wrapper_type=args.wrapper_type, task_name=args.task_name, label_list=args.label_list,
                               max_seq_length=args.pet_max_seq_length, verbalizer_file=args.verbalizer_file,
-                              cache_dir=args.cache_dir)
+                              cache_dir=args.cache_dir, multi_label=args.multi_label)
 
     train_cfg = pet.TrainConfig(device=args.device, per_gpu_train_batch_size=args.pet_per_gpu_train_batch_size,
                                 per_gpu_unlabeled_batch_size=args.pet_per_gpu_unlabeled_batch_size, n_gpu=args.n_gpu,
@@ -132,13 +132,13 @@ def main():
     parser.add_argument("--pet_max_seq_length", default=256, type=int,
                         help="The maximum total input sequence length after tokenization for PET. Sequences longer "
                              "than this will be truncated, sequences shorter will be padded.")
-    parser.add_argument("--pet_per_gpu_train_batch_size", default=4, type=int,
+    parser.add_argument("--pet_per_gpu_train_batch_size", default=2, type=int,
                         help="Batch size per GPU/CPU for PET training.")
     parser.add_argument("--pet_per_gpu_eval_batch_size", default=8, type=int,
                         help="Batch size per GPU/CPU for PET evaluation.")
     parser.add_argument("--pet_per_gpu_unlabeled_batch_size", default=4, type=int,
                         help="Batch size per GPU/CPU for auxiliary language modeling examples in PET.")
-    parser.add_argument('--pet_gradient_accumulation_steps', type=int, default=1,
+    parser.add_argument('--pet_gradient_accumulation_steps', type=int, default=2,
                         help="Number of updates steps to accumulate before performing a backward/update pass in PET.")
     parser.add_argument("--pet_num_train_epochs", default=3, type=float,
                         help="Total number of training epochs to perform in PET.")
@@ -188,9 +188,9 @@ def main():
                         help="If true, train examples are not chosen randomly, but split evenly across all labels.")
     parser.add_argument("--cache_dir", default="", type=str,
                         help="Where to store the pre-trained models downloaded from S3.")
-    parser.add_argument("--learning_rate", default=1e-5, type=float,
+    parser.add_argument("--learning_rate", default=5e-5, type=float,
                         help="The initial learning rate for Adam.")
-    parser.add_argument("--weight_decay", default=0.01, type=float,
+    parser.add_argument("--weight_decay", default=0.00, type=float,
                         help="Weight decay if we apply some.")
     parser.add_argument("--adam_epsilon", default=1e-8, type=float,
                         help="Epsilon for Adam optimizer.")
@@ -214,6 +214,8 @@ def main():
                         help="Whether to use priming for evaluation")
     parser.add_argument("--eval_set", choices=['dev', 'test'], default='dev',
                         help="Whether to perform evaluation on the dev set or the test set")
+    parser.add_argument('--multi_label', action='store_true',
+                        help="Whether to use priming for evaluation")
 
     args = parser.parse_args()
     logger.info("Parameters: {}".format(args))

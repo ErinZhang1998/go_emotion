@@ -47,7 +47,7 @@ class Preprocessor(ABC):
 class MLMPreprocessor(Preprocessor):
     """Preprocessor for models pretrained using a masked language modeling objective (e.g., BERT)."""
 
-    def get_input_features(self, example: InputExample, labelled: bool, priming: bool = False,
+    def get_input_features(self, example: InputExample, labelled: bool, priming: bool = False, multi_label: bool = False,
                            **kwargs) -> InputFeatures:
 
         if priming:
@@ -79,12 +79,21 @@ class MLMPreprocessor(Preprocessor):
         assert len(attention_mask) == self.wrapper.config.max_seq_length
         assert len(token_type_ids) == self.wrapper.config.max_seq_length
 
-        label = self.label_map[example.label] if example.label is not None else -100
+        # from pdb import set_trace as bp; bp()
+        if len(example.label) > 1:
+            example.label = example.label[0]
+
+        if multi_label:
+            label = np.zeros(len(self.label_map))
+            for label_cls in example.label.split(', '):
+                label[int(label_cls)] = 1
+        else:
+            label = self.label_map[example.label] if example.label is not None else -100
         
         logits = example.logits if example.logits else [-1]
 
         if labelled:
-            mlm_labels = self.pvp.get_mask_positions(input_ids)
+            mlm_labels = self.pvp.get_mask_positions(input_ids) # 1 where pos 
             if self.wrapper.config.model_type == 'gpt2':
                 # shift labels to the left by one
                 mlm_labels.append(mlm_labels.pop(0))
