@@ -281,17 +281,20 @@ class BinaryPVP(PVP):
         "0": ["No"],
         "1": ["Yes"],
     }
-    emotion = ""
 
     def get_parts(self, example: InputExample) -> FilledPattern:
         text_a = self.shortenable(example.text_a)
 
-        if self.emotion == "joy":
-            return joy_prompt(text_a, self.mask, self.pattern_id)
-        elif self.emotion == "anger":
-            return anger_prompt(text_a, self.mask, self.pattern_id)
-        elif self.emotion == "sadness":
-            return sadness_prompt(text_a, self.mask, self.pattern_id)
+        if self.pattern_id == 0: 
+            return [text_a, ".", "Does the previous sentence express anger, annoyance, or disapproval? Yes or No?", self.mask],[]
+        elif self.pattern_id == 1: 
+            return [text_a, ".", "Does the previous sentence express joy, amusement, approval, excitement, gratitude, love, optimism, relief, pride, admiration, desire, or caring? Yes or No?", self.mask],[]
+        elif self.pattern_id == 2: 
+            return [text_a, ".", "Does the previous sentence express sadness, disappointment, embarrassment, grief, or remorse? Yes or No?", self.mask],[]
+        else:
+            raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
+
+        
 
     def verbalize(self, label) -> List[str]:
         return BinaryPVP.VERBALIZER[label]
