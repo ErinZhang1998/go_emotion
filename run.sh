@@ -1,23 +1,25 @@
-CUDA_VISIBLE_DEVICES=4 python3 cli.py \
---method single \
---pattern_ids 0 \
---data_dir /raid/xiaoyuz1/goemotions/goemotions/data/ekman/sadness \
---model_type bert \
---model_name_or_path bert-base-uncased \
---task_name ekman_sadness \
---output_dir /raid/xiaoyuz1/goemotions/prompt/sadness \
---pet_per_gpu_train_batch_size 32 \
---do_eval \
---do_train 
-
-CUDA_VISIBLE_DEVICES=4 python3 cli.py \
+CUDA_VISIBLE_DEVICES=5 python3 cli.py \
 --method single \
 --pattern_ids 0 \
 --data_dir /raid/xiaoyuz1/goemotions/goemotions/data/ekman/anger \
 --model_type bert \
 --model_name_or_path bert-base-uncased \
 --task_name ekman_anger \
---output_dir /raid/xiaoyuz1/goemotions/prompt/anger \
+--output_dir /raid/xiaoyuz1/goemotions/prompt/anger_after_sadness \
+--pet_per_gpu_train_batch_size 32 \
+--do_eval \
+--do_train \
+--continue_train \
+--continue_train_path /raid/xiaoyuz1/goemotions/prompt/anger2/p0-i0
+
+CUDA_VISIBLE_DEVICES=4 python3 cli.py \
+--method single \
+--pattern_ids 0 \
+--data_dir /raid/xiaoyuz1/goemotions/goemotions/data/ekman/anger_after_sadness \
+--model_type bert \
+--model_name_or_path bert-base-uncased \
+--task_name ekman_sadness \
+--output_dir /raid/xiaoyuz1/goemotions/prompt/anger_after_sadness \
 --pet_per_gpu_train_batch_size 32 \
 --do_eval \
 --do_train 

@@ -155,14 +155,19 @@ class TransformerModelWrapper:
                                                                         self.config.verbalizer_file)
 
     @classmethod
-    def from_pretrained(cls, path: str) -> 'TransformerModelWrapper':
+    def from_pretrained(cls, path: str, partial : bool = False, model_config : int = None) -> 'TransformerModelWrapper':
         """Load a pretrained wrapper from a given path."""
         wrapper = TransformerModelWrapper.__new__(TransformerModelWrapper)
-        wrapper.config = wrapper._load_config(path)
-        tokenizer_class = MODEL_CLASSES[wrapper.config.model_type]['tokenizer']
-        model_class = MODEL_CLASSES[wrapper.config.model_type][wrapper.config.wrapper_type]
+        loaded_config = wrapper._load_config(path)
+        tokenizer_class = MODEL_CLASSES[loaded_config.model_type]['tokenizer']
+        model_class = MODEL_CLASSES[loaded_config.model_type][loaded_config.wrapper_type]
         wrapper.model = model_class.from_pretrained(path)
         wrapper.tokenizer = tokenizer_class.from_pretrained(path)
+        if not partial:
+            wrapper.config = loaded_config
+        else:
+            assert model_config is not None
+            wrapper.config = model_config
         wrapper.preprocessor = PREPROCESSORS[wrapper.config.wrapper_type](
             wrapper, wrapper.config.task_name, wrapper.config.pattern_id, wrapper.config.verbalizer_file)
         wrapper.task_helper = TASK_HELPERS[wrapper.config.task_name](wrapper) \

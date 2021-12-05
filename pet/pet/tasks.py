@@ -165,14 +165,14 @@ class BinaryProcessor(DataProcessor):
 
 # type: Dict[str,Callable[[],DataProcessor]]
 PROCESSORS = {
-    'ekman_angry' : BinaryProcessor,
+    'ekman_anger' : BinaryProcessor,
     'ekman_joy' : BinaryProcessor,
     'ekman_sadness' : BinaryProcessor,
     'ekman_surprise' : BinaryProcessor,
 }  
 TASK_HELPERS = {}
 METRICS = {
-    'ekman_angry' : ["acc", "recall", "precision"],
+    'ekman_anger' : ["acc", "recall", "precision"],
     'ekman_joy' : ["acc", "recall", "precision"],
     'ekman_sadness' : ["acc", "recall", "precision"],
     'ekman_surprise' : ["acc", "recall", "precision"],

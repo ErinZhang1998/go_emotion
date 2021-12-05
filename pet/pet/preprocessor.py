@@ -64,7 +64,6 @@ class MLMPreprocessor(Preprocessor):
             input_ids = self.wrapper.tokenizer.build_inputs_with_special_tokens(input_ids)
         else:
             input_ids, token_type_ids = self.pvp.encode(example)
-
         attention_mask = [1] * len(input_ids)
         padding_length = self.wrapper.config.max_seq_length - len(input_ids)
 

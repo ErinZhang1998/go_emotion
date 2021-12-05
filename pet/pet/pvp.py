@@ -319,8 +319,71 @@ def surprise_dummy(wrapper, pattern_id: int = 0, verbalizer_file: str = None, se
     obj.emotion = "surprise"
     return obj
 
+class BinaryGoEmotionsPVP(PVP):
+    VERBALIZER = {
+        "0": ["No"],
+        "1": ["Yes"],
+    }
+
+    def get_parts(self, example: InputExample) -> FilledPattern:
+        text_a = self.shortenable(example.text_a)
+
+        if self.pattern_id == 6: 
+            return [text_a, ".", "Does the previous sentence express confusion, lack of understanding, or uncertainty? Yes or No?", self.mask],[]
+        elif self.pattern_id == 7:
+            return [text_a, ".", "Does the previous sentence express curiosity, a want to know, or a want to learn? Yes or No?", self.mask],[]
+        elif self.pattern_id == 8:
+            return [text_a, ".", "Does the previous sentence express desire, or a want for an event to happen? Yes or No?", self.mask],[]
+        elif self.pattern_id == 9:
+            return [text_a, ".", "Does the previous sentence express disappointment, related to non fulfillment of hope or expectations? Yes or No?", self.mask],[]
+        elif self.pattern_id == 10:
+            return [text_a, ".", "Does the previous sentence express disapproval, or unfavorable opinions? Yes or No?", self.mask],[]
+        elif self.pattern_id == 11:
+            return [text_a, ".", "Does the previous sentence express disgust or revulsion caused by unpleasant or offensive thing? Yes or No?", self.mask],[]
+        elif self.pattern_id == 12:
+            return [text_a, ".", "Does the previous sentence express embarrassment, shame, self-consciousness, or awkwardness? Yes or No?", self.mask],[]
+        elif self.pattern_id == 13:
+            return [text_a, ".", "Does the previous sentence express excitement, enthusiasm, or eagerness? Yes or No?", self.mask],[]
+        elif self.pattern_id == 14:
+            return [text_a, ".", "Does the previous sentence express fear, or being afraid? Yes or No?", self.mask],[]
+        elif self.pattern_id == 15:
+            return [text_a, ".", "Does the previous sentence express gratitude, related to being thankful or grateful? Yes or No?", self.mask],[]
+        elif self.pattern_id == 16:
+            return [text_a, ".", "Does the previous sentence express grief, or intense sorrow? Yes or No?", self.mask],[]
+        elif self.pattern_id == 17:
+            return [text_a, ".", "Does the previous sentence express joy, pleasure, or happiness? Yes or No?", self.mask],[]
+        elif self.pattern_id == 18:
+            return [text_a, ".", "Does the previous sentence express love, or strong sense of affection? Yes or No?", self.mask],[]
+        elif self.pattern_id == 19:
+            return [text_a, ".", "Does the previous sentence express nervousness, or anxiety? Yes or No?", self.mask],[]
+        elif self.pattern_id == 20:
+            return [text_a, ".", "Does the previous sentence express optimism, or being hopeful? Yes or No?", self.mask],[]
+        elif self.pattern_id == 21:
+            return [text_a, ".", "Does the previous sentence express pride, or satisfaction caused by achievements? Yes or No?", self.mask],[]
+        elif self.pattern_id == 22:
+            return [text_a, ".", "Does the previous sentence express ? Yes or No?", self.mask],[]
+        elif self.pattern_id == 23:
+            return [text_a, ".", "Does the previous sentence express ? Yes or No?", self.mask],[]
+        elif self.pattern_id == 24:
+            return [text_a, ".", "Does the previous sentence express ? Yes or No?", self.mask],[]
+        elif self.pattern_id == 25:
+            return [text_a, ".", "Does the previous sentence express ? Yes or No?", self.mask],[]
+        elif self.pattern_id == 26:
+            return [text_a, ".", "Does the previous sentence express ? Yes or No?", self.mask],[]
+        
+        
+        if self.emotion == "joy":
+            return joy_prompt(text_a, self.mask, self.pattern_id)
+        elif self.emotion == "anger":
+            return anger_prompt(text_a, self.mask, self.pattern_id)
+        elif self.emotion == "sadness":
+            return sadness_prompt(text_a, self.mask, self.pattern_id)
+
+    def verbalize(self, label) -> List[str]:
+        return BinaryPVP.VERBALIZER[label]
+
 PVPS = {
-    'ekman_angry' : anger_dummy,
+    'ekman_anger' : anger_dummy,
     'ekman_joy' : joy_dummy,
     'ekman_sadness' : sadness_dummy,
     'ekman_surprise' : surprise_dummy,

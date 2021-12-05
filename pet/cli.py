@@ -114,7 +114,7 @@ def main():
                         help="Batch size per GPU/CPU for auxiliary language modeling examples in PET.")
     parser.add_argument('--pet_gradient_accumulation_steps', type=int, default=1,
                         help="Number of updates steps to accumulate before performing a backward/update pass in PET.")
-    parser.add_argument("--pet_num_train_epochs", default=3, type=float,
+    parser.add_argument("--pet_num_train_epochs", default=1, type=float,
                         help="Total number of training epochs to perform in PET.")
     parser.add_argument("--pet_max_steps", default=-1, type=int,
                         help="If > 0: set total number of training steps to perform in PET. Override num_train_epochs.")
@@ -184,6 +184,10 @@ def main():
                         help="Whether to perform training")
     parser.add_argument('--do_eval', action='store_true',
                         help="Whether to perform evaluation")
+    parser.add_argument('--continue_train', action='store_true',
+                        help="Load from_pretrained using the folder instead of training from scratch")
+    parser.add_argument('--continue_train_path', type=str,
+                        help="Load from_pretrained path")
     parser.add_argument('--priming', action='store_true',
                         help="Whether to use priming for evaluation")
     parser.add_argument("--eval_set", choices=['dev', 'test'], default='dev',
@@ -226,7 +230,7 @@ def main():
     if args.method == 'single':
         train_pet_one_model(pet_model_cfg, pet_train_cfg, pet_eval_cfg, args.pattern_ids, args.output_dir,
                         repetitions=args.pet_repetitions, train_data=train_data, unlabeled_data=None,
-                        eval_data=eval_data, do_train=args.do_train, do_eval=args.do_eval,
+                        eval_data=eval_data, do_train=args.do_train, do_eval=args.do_eval, continue_train = args.continue_train, continue_train_path = args.continue_train_path,
                         save_unlabeled_logits=not args.no_distillation, seed=args.seed)
     else:
         raise ValueError(f"Training method '{args.method}' not implemented")

@@ -130,7 +130,7 @@ def init_model(config: WrapperConfig) -> TransformerModelWrapper:
 def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, eval_config: EvalConfig,
                        pattern_ids: List[int], output_dir: str, ipet_data_dir: str = None, repetitions: int = 3,
                        train_data: List[InputExample] = None, unlabeled_data: List[InputExample] = None,
-                       eval_data: List[InputExample] = None, do_train: bool = True, do_eval: bool = True,
+                       eval_data: List[InputExample] = None, do_train: bool = True, do_eval: bool = True, continue_train : bool = False, continue_train_path : str = None,
                        save_unlabeled_logits: bool = False, seed: int = 42):
     """
     Train and evaluate an ensemble of PET models without knowledge distillation.
@@ -158,31 +158,29 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
 
     for pattern_id in pattern_ids:
         for iteration in range(1):
-
             wrapper.init_preprocessor(pattern_id)
-
             model_config.pattern_id = pattern_id
             results_dict = {}
-
             pattern_iter_output_dir = "{}/p{}-i{}".format(output_dir, pattern_id, iteration)
 
-            # if os.path.exists(pattern_iter_output_dir):
-            #     logger.warning(f"Path {pattern_iter_output_dir} already exists, skipping it...")
-            #     continue
+            if continue_train:
+                if continue_train_path is not None:
+                    if os.path.exists(continue_train_path):
+                        wrapper = TransformerModelWrapper.from_pretrained(continue_train_path, partial=True, model_config=model_config)
+                else:
+                    raise 
 
             if not os.path.exists(pattern_iter_output_dir):
                 os.makedirs(pattern_iter_output_dir)
 
             # Training
             if do_train:
-                ipet_train_data = None
-
                 results_dict.update(train_single_model(
                     wrapper, 
                     train_data, 
                     train_config, 
                     eval_config,
-                    ipet_train_data=ipet_train_data,
+                    ipet_train_data=None,
                     unlabeled_data=unlabeled_data))
 
                 with open(os.path.join(pattern_iter_output_dir, 'results.txt'), 'w') as fh:
@@ -199,8 +197,8 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
                 #     save_logits(os.path.join(pattern_iter_output_dir, 'logits.txt'), logits)
 
                 if not do_eval:
-                    wrapper.model = None
-                    wrapper = None
+                    # wrapper.model = None
+                    # wrapper = None
                     torch.cuda.empty_cache()
 
             # Evaluation
@@ -225,8 +223,8 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
                 for metric, value in scores.items():
                     results[metric][pattern_id].append(value)
 
-                wrapper.model = None
-                wrapper = None
+                # wrapper.model = None
+                # wrapper = None
                 torch.cuda.empty_cache()
 
     if do_eval:
@@ -292,8 +290,8 @@ def train_single_model(model: TransformerModelWrapper, train_data: List[InputExa
         results_dict['global_step'] = global_step
         results_dict['average_loss'] = tr_loss
 
-    if train_data and return_train_set_results:
-        results_dict['train_set_after_training'] = evaluate(model, train_data, eval_config)['scores']['acc']
+    # if train_data and return_train_set_results:
+    #     results_dict['train_set_after_training'] = evaluate(model, train_data, eval_config)['scores']['acc']
 
     return results_dict
 
