@@ -1,6 +1,18 @@
 CUDA_VISIBLE_DEVICES=4 python3 cli.py \
 --method single \
 --pattern_ids 0 \
+--data_dir /raid/xiaoyuz1/goemotions/goemotions/data/ekman/sadness \
+--model_type bert \
+--model_name_or_path bert-base-uncased \
+--task_name ekman_sadness \
+--output_dir /raid/xiaoyuz1/goemotions/prompt/sadness \
+--pet_per_gpu_train_batch_size 32 \
+--do_eval \
+--do_train 
+
+CUDA_VISIBLE_DEVICES=4 python3 cli.py \
+--method single \
+--pattern_ids 0 \
 --data_dir /raid/xiaoyuz1/goemotions/goemotions/data/ekman/joy \
 --model_type bert \
 --model_name_or_path bert-base-uncased \
@@ -18,9 +30,9 @@ CUDA_VISIBLE_DEVICES=4 python3 cli.py \
 --model_name_or_path bert-base-uncased \
 --task_name ekman \
 --output_dir /raid/xiaoyuz1/goemotions/prompt/anger \
---do_train \
 --pet_per_gpu_train_batch_size 32 \
---do_eval 
+--do_eval \
+--do_train 
 
 # [multi_alt] [16 intensities + goemotions]
 python main.py train \

@@ -206,7 +206,7 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
             # Evaluation
             if do_eval:
                 logger.info("Starting evaluation...")
-                if not wrapper:
+                if not wrapper or (do_eval and not do_train):
                     wrapper = TransformerModelWrapper.from_pretrained(pattern_iter_output_dir)
 
                 eval_result = evaluate(wrapper, eval_data, eval_config, priming_data=train_data)
@@ -364,6 +364,8 @@ def _write_results(path: str, results: Dict):
 
         for metric in results.keys():
             all_results = [result for pattern_results in results[metric].values() for result in pattern_results]
+            if isinstance(all_results[0], tuple):
+                all_results = [vi[0] for vi in all_results]
             all_mean = statistics.mean(all_results)
             all_stdev = statistics.stdev(all_results) if len(all_results) > 1 else 0
             result_str = "{}-all-p: {} +- {}".format(metric, all_mean, all_stdev)

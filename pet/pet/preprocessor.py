@@ -35,7 +35,7 @@ class Preprocessor(ABC):
         :param verbalizer_file: path to a file containing a verbalizer that overrides the default verbalizer
         """
         self.wrapper = wrapper
-        self.pvp = PVPS[task_name](self.wrapper, pattern_id, verbalizer_file)  # type: PVP
+        self.pvp = PVPS[task_name](self.wrapper, pattern_id, verbalizer_file) 
         self.label_map = {label: i for i, label in enumerate(self.wrapper.config.label_list)}
 
     @abstractmethod

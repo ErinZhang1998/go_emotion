@@ -36,6 +36,8 @@ import log
 from pet import preprocessor
 from pet.tasks import TASK_HELPERS
 from pet.utils import InputFeatures, DictDataset, distillation_loss
+from torchsampler import ImbalancedDatasetSampler
+
 
 logger = log.get_logger('root')
 
@@ -192,8 +194,13 @@ class TransformerModelWrapper:
               
         train_batch_size = per_gpu_train_batch_size * max(1, n_gpu)
         train_dataset = self._generate_dataset(task_train_data)
-        train_sampler = RandomSampler(train_dataset)
-        train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=train_batch_size)
+        # train_sampler = RandomSampler(train_dataset)
+        train_sampler = ImbalancedDatasetSampler(train_dataset),
+        train_dataloader = DataLoader(
+            train_dataset, 
+            sampler=train_sampler, 
+            batch_size=train_batch_size,
+        )
 
         if max_steps > 0:
             t_total = max_steps
