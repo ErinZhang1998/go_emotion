@@ -227,19 +227,19 @@ class GoEmotionDataProcessor(DataProcessor):
     LABEL_COLUMN = 1
 
     def get_train_examples(self, data_dir: str) -> List[InputExample]:
-        return self._create_examples(os.path.join(data_dir, CombinedDataProcessor.TRAIN_FILE_NAME), "train")
+        return self._create_examples(os.path.join(data_dir, GoEmotionDataProcessor.TRAIN_FILE_NAME), "train")
 
     def get_dev_examples(self, data_dir: str) -> List[InputExample]:
-        return self._create_examples(os.path.join(data_dir, CombinedDataProcessor.DEV_FILE_NAME), "dev")
+        return self._create_examples(os.path.join(data_dir, GoEmotionDataProcessor.DEV_FILE_NAME), "dev")
 
     def get_test_examples(self, data_dir) -> List[InputExample]:
-        return self._create_examples(os.path.join(data_dir, CombinedDataProcessor.TEST_FILE_NAME), "test")
+        return self._create_examples(os.path.join(data_dir, GoEmotionDataProcessor.TEST_FILE_NAME), "test")
 
     def get_unlabeled_examples(self, data_dir) -> List[InputExample]:
-        return self._create_examples(os.path.join(data_dir, CombinedDataProcessor.UNLABELED_FILE_NAME), "unlabeled")
+        return self._create_examples(os.path.join(data_dir, GoEmotionDataProcessor.UNLABELED_FILE_NAME), "unlabeled")
 
     def get_labels(self) -> List[str]:
-        return CombinedDataProcessor.LABELS
+        return GoEmotionDataProcessor.LABELS
 
     def _create_examples(self, path, set_type, max_examples=-1, skip_first=0):
         examples = []
@@ -249,11 +249,11 @@ class GoEmotionDataProcessor(DataProcessor):
             next(reader, None) # skip headers
             for idx, row in enumerate(reader):
                 guid = "%s-%s" % (set_type, idx)
-                label = row[CombinedDataProcessor.LABEL_COLUMN]
-                text_a = row[CombinedDataProcessor.TEXT_A_COLUMN]
+                label = row[GoEmotionDataProcessor.LABEL_COLUMN]
+                text_a = row[GoEmotionDataProcessor.TEXT_A_COLUMN]
                 # do some additional text processing
                 # from pdb import set_trace as bp; bp()
-                text_b = row[CombinedDataProcessor.TEXT_B_COLUMN] if CombinedDataProcessor.TEXT_B_COLUMN >= 0 else None
+                text_b = row[GoEmotionDataProcessor.TEXT_B_COLUMN] if GoEmotionDataProcessor.TEXT_B_COLUMN >= 0 else None
                 example = InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label)
                 examples.append(example)
 

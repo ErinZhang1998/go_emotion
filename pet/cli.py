@@ -127,7 +127,7 @@ def main():
                         help="The decoding strategy for PET with multiple masks (only for PET)")
     parser.add_argument("--no_distillation", action='store_true',
                         help="If set to true, no distillation is performed (only for PET)")
-    parser.add_argument("--pet_repetitions", default=3, type=int,
+    parser.add_argument("--pet_repetitions", default=1, type=int,
                         help="The number of times to repeat PET training and testing with different seeds.")
     parser.add_argument("--pet_max_seq_length", default=256, type=int,
                         help="The maximum total input sequence length after tokenization for PET. Sequences longer "

@@ -368,8 +368,8 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
                     save_logits(os.path.join(pattern_iter_output_dir, 'logits.txt'), logits)
 
                 if not do_eval:
-                    wrapper.model = None
-                    wrapper = None
+                    # wrapper.model = None
+                    # wrapper = None
                     torch.cuda.empty_cache()
 
             # Evaluation
@@ -394,8 +394,8 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
                 for metric, value in scores.items():
                     results[metric][pattern_id].append(value)
 
-                wrapper.model = None
-                wrapper = None
+                # wrapper.model = None
+                # wrapper = None
                 torch.cuda.empty_cache()
 
     if do_eval:
@@ -477,8 +477,8 @@ def train_pet_ensemble(model_config: WrapperConfig, train_config: TrainConfig, e
                     save_logits(os.path.join(pattern_iter_output_dir, 'logits.txt'), logits)
 
                 if not do_eval:
-                    # wrapper.model = None
-                    # wrapper = None
+                    wrapper.model = None
+                    wrapper = None
                     torch.cuda.empty_cache()
 
             # Evaluation
@@ -503,8 +503,8 @@ def train_pet_ensemble(model_config: WrapperConfig, train_config: TrainConfig, e
                 for metric, value in scores.items():
                     results[metric][pattern_id].append(value)
 
-                # wrapper.model = None
-                # wrapper = None
+                wrapper.model = None
+                wrapper = None
                 torch.cuda.empty_cache()
 
     if do_eval:
@@ -570,8 +570,8 @@ def train_single_model(model: TransformerModelWrapper, train_data: List[InputExa
         results_dict['global_step'] = global_step
         results_dict['average_loss'] = tr_loss
 
-    if train_data and return_train_set_results:
-        results_dict['train_set_after_training'] = evaluate(model, train_data, eval_config)['scores']['acc']
+    # if train_data and return_train_set_results:
+    #     results_dict['train_set_after_training'] = evaluate(model, train_data, eval_config)['scores']['acc']
 
     return results_dict
 
@@ -591,7 +591,7 @@ def evaluate(model: TransformerModelWrapper, eval_data: List[InputExample], conf
     if config.priming:
         for example in eval_data:
             example.meta['priming_data'] = priming_data
-
+    # from pdb import set_trace as bp; bp()
     metrics = config.metrics if config.metrics else ['acc']
     device = torch.device(config.device if config.device else "cuda" if torch.cuda.is_available() else "cpu")
 

@@ -80,8 +80,8 @@ class MLMPreprocessor(Preprocessor):
         assert len(token_type_ids) == self.wrapper.config.max_seq_length
 
         # from pdb import set_trace as bp; bp()
-        if len(example.label) > 1:
-            example.label = example.label[0]
+        # if len(example.label) > 1:
+        #     example.label = example.label[0]
 
         if multi_label:
             label = np.zeros(len(self.label_map))
