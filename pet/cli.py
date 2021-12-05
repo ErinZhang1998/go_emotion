@@ -220,6 +220,7 @@ def main():
     args = parser.parse_args()
     logger.info("Parameters: {}".format(args))
 
+    from pdb import set_trace as bp; bp()
     if os.path.exists(args.output_dir) and os.listdir(args.output_dir) \
             and args.do_train and not args.overwrite_output_dir:
         raise ValueError("Output directory ({}) already exists and is not empty.".format(args.output_dir))

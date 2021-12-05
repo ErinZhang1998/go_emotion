@@ -375,7 +375,7 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
             # Evaluation
             if do_eval:
                 logger.info("Starting evaluation...")
-                if not wrapper:
+                if not wrapper or (do_eval and not do_train):
                     wrapper = TransformerModelWrapper.from_pretrained(pattern_iter_output_dir)
 
                 eval_result = evaluate(wrapper, eval_data, eval_config, priming_data=train_data)
