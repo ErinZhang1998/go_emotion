@@ -351,7 +351,6 @@ def _write_results(path: str, results: Dict):
     with open(path, 'w') as fh:
         for metric in results.keys():
             for pattern_id, values in results[metric].items():
-                # import pdb; pdb.set_trace()
 
                 if isinstance(values[0], tuple):
                     values = [vi[0] for vi in values]

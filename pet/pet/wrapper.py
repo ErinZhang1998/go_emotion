@@ -195,7 +195,7 @@ class TransformerModelWrapper:
         train_batch_size = per_gpu_train_batch_size * max(1, n_gpu)
         train_dataset = self._generate_dataset(task_train_data)
         # train_sampler = RandomSampler(train_dataset)
-        train_sampler = ImbalancedDatasetSampler(train_dataset),
+        train_sampler = ImbalancedDatasetSampler(train_dataset)
         train_dataloader = DataLoader(
             train_dataset, 
             sampler=train_sampler, 
@@ -361,7 +361,6 @@ class TransformerModelWrapper:
             'mlm_labels': torch.tensor([f.mlm_labels for f in features], dtype=torch.long),
             'logits': torch.tensor([f.logits for f in features], dtype=torch.float),
             'idx': torch.tensor([f.idx for f in features], dtype=torch.long),
-            'label_list' : self.config.label_list,
         }
         return DictDataset(**feature_dict)
 
@@ -371,8 +370,8 @@ class TransformerModelWrapper:
         for (ex_index, example) in enumerate(examples):
             if ex_index % 10000 == 0:
                 logger.info("Writing example {}".format(ex_index))
-            if ex_index > 10000:
-                break
+            if example.text_a is np.nan:
+                raise
             input_features = self.preprocessor.get_input_features(example, labelled=labelled, priming=priming)
             features.append(input_features)
             if ex_index < 5:

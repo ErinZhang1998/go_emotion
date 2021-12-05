@@ -176,23 +176,28 @@ class DictDataset(Dataset):
     """A dataset of tensors that uses a dictionary for key-value mappings"""
 
     def __init__(self, **tensors):
-        import pdb; pdb.set_trace()
-        # tensors.values()
-        new_tensors = {}
-        labels = None
-        for k,tensor in tensors.items():
-            if not isinstance(tensor, list):
-                new_tensors[k] = tensor
-            else:
-                labels = tensor
-        assert all(next(iter(new_tensors.values())).size(0) == tensor.size(0) for tensor in new_tensors.values())
-        self.tensors = new_tensors
-        self.labels = labels
+        # 
+        # # tensors.values()
+        # new_tensors = {}
+        # labels = None
+        # for k,tensor in tensors.items():
+        #     if not isinstance(tensor, list):
+        #         new_tensors[k] = tensor
+        #     else:
+        #         labels = tensor
+        # assert all(next(iter(new_tensors.values())).size(0) == tensor.size(0) for tensor in new_tensors.values())
+        # self.tensors = new_tensors
+        # self.labels = labels
+        tensors.values()
+
+        assert all(next(iter(tensors.values())).size(0) == tensor.size(0) for tensor in tensors.values())
+        self.tensors = tensors
 
     def get_labels(self):
-        return self.labels
+        return self.tensors['labels']
     
     def __getitem__(self, index):
+        
         return {key: tensor[index] for key, tensor in self.tensors.items()}
 
     def __len__(self):
