@@ -127,9 +127,12 @@ class PVP(ABC):
         parts_a, parts_b = self.get_parts(example)
 
         kwargs = {'add_prefix_space': True} if isinstance(tokenizer, GPT2Tokenizer) else {}
-
+        
         parts_a = [x if isinstance(x, tuple) else (x, False) for x in parts_a]
-        parts_a = [(tokenizer.encode(x, add_special_tokens=False, **kwargs), s) for x, s in parts_a if x]
+        try:
+            parts_a = [(tokenizer.encode(x, add_special_tokens=False, **kwargs), s) for x, s in parts_a if x]
+        except:
+            import pdb; pdb.set_trace()
 
         if parts_b:
             parts_b = [x if isinstance(x, tuple) else (x, False) for x in parts_b]

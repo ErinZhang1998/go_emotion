@@ -360,9 +360,9 @@ class TransformerModelWrapper:
             'labels': torch.tensor([f.label for f in features], dtype=torch.long),
             'mlm_labels': torch.tensor([f.mlm_labels for f in features], dtype=torch.long),
             'logits': torch.tensor([f.logits for f in features], dtype=torch.float),
-            'idx': torch.tensor([f.idx for f in features], dtype=torch.long)
+            'idx': torch.tensor([f.idx for f in features], dtype=torch.long),
+            'label_list' : self.config.label_list,
         }
-        
         return DictDataset(**feature_dict)
 
     def _convert_examples_to_features(self, examples: List[InputExample], labelled: bool = True,
@@ -371,6 +371,8 @@ class TransformerModelWrapper:
         for (ex_index, example) in enumerate(examples):
             if ex_index % 10000 == 0:
                 logger.info("Writing example {}".format(ex_index))
+            if ex_index > 10000:
+                break
             input_features = self.preprocessor.get_input_features(example, labelled=labelled, priming=priming)
             features.append(input_features)
             if ex_index < 5:
@@ -403,6 +405,6 @@ class TransformerModelWrapper:
         """Perform a MLM evaluation step."""
         inputs = self.generate_default_inputs(batch)
         outputs = self.model(**inputs)
-        # import pdb; pdb.set_trace()
+        # 
 
         return self.preprocessor.pvp.convert_mlm_logits_to_cls_logits(batch['mlm_labels'], outputs[0])
