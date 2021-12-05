@@ -260,19 +260,19 @@ class PVP(ABC):
 
 def anger_prompt(text_a, mask, pattern_id):
     if pattern_id == 0:
-        return [text_a, ".", "Does the previous sentence express anger, annoyance, or disapproval? Yes or No?", mask]
+        return [text_a, ".", "Does the previous sentence express anger, annoyance, or disapproval? Yes or No?", mask],[]
     else:
         raise ValueError("No pattern implemented for id {}".format(pattern_id))
 
 def joy_prompt(text_a, mask, pattern_id):
     if pattern_id == 0:
-        return [text_a, ".", "Does the previous sentence express joy, amusement, approval, excitement, gratitude, love, optimism, relief, pride, admiration, desire, or caring? Yes or No?", mask]
+        return [text_a, ".", "Does the previous sentence express joy, amusement, approval, excitement, gratitude, love, optimism, relief, pride, admiration, desire, or caring? Yes or No?", mask],[]
     else:
         raise ValueError("No pattern implemented for id {}".format(pattern_id))
 
 def sadness_prompt(text_a, mask, pattern_id):
     if pattern_id == 0: 
-        return [text_a, ".", "Does the previous sentence express sadness, disappointment, embarrassment, grief, or remorse? Yes or No?", mask]
+        return [text_a, ".", "Does the previous sentence express sadness, disappointment, embarrassment, grief, or remorse? Yes or No?", mask],[]
     else:
         raise ValueError("No pattern implemented for id {}".format(pattern_id))
 
@@ -281,31 +281,44 @@ class BinaryPVP(PVP):
         "0": ["No"],
         "1": ["Yes"],
     }
+    emotion = ""
 
     def get_parts(self, example: InputExample) -> FilledPattern:
         text_a = self.shortenable(example.text_a)
 
-        if self.pattern_id == 0: 
-            return [text_a, ".", "Does the previous sentence express anger, annoyance, or disapproval? Yes or No?", self.mask],[]
-        elif self.pattern_id == 1: 
-            return [text_a, ".", "Does the previous sentence express joy, amusement, approval, excitement, gratitude, love, optimism, relief, pride, admiration, desire, or caring? Yes or No?", self.mask],[]
-        elif self.pattern_id == 2: 
-            return [text_a, ".", "Does the previous sentence express sadness, disappointment, embarrassment, grief, or remorse? Yes or No?", self.mask],[]
-        else:
-            raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
-
-        
+        if self.emotion == "joy":
+            return joy_prompt(text_a, self.mask, self.pattern_id)
+        elif self.emotion == "anger":
+            return anger_prompt(text_a, self.mask, self.pattern_id)
+        elif self.emotion == "sadness":
+            return sadness_prompt(text_a, self.mask, self.pattern_id)
 
     def verbalize(self, label) -> List[str]:
         return BinaryPVP.VERBALIZER[label]
 
-def dummy(task_name):
-    return 
+def anger_dummy(wrapper, pattern_id: int = 0, verbalizer_file: str = None, seed: int = 42):
+    obj = BinaryPVP(wrapper, pattern_id, verbalizer_file, seed)
+    obj.emotion = "anger"
+    return obj
 
+def joy_dummy(wrapper, pattern_id: int = 0, verbalizer_file: str = None, seed: int = 42):
+    obj = BinaryPVP(wrapper, pattern_id, verbalizer_file, seed)
+    obj.emotion = "joy"
+    return obj
+
+def sadness_dummy(wrapper, pattern_id: int = 0, verbalizer_file: str = None, seed: int = 42):
+    obj = BinaryPVP(wrapper, pattern_id, verbalizer_file, seed)
+    obj.emotion = "sadness"
+    return obj
+
+def surprise_dummy(wrapper, pattern_id: int = 0, verbalizer_file: str = None, seed: int = 42):
+    obj = BinaryPVP(wrapper, pattern_id, verbalizer_file, seed)
+    obj.emotion = "surprise"
+    return obj
 
 PVPS = {
-    'ekman_angry' : lambda : BinaryPVP('ekman_angry'),
-    'ekman_joy' : lambda : BinaryPVP('ekman_joy'),
-    'ekman_sadness' : lambda : BinaryPVP('ekman_sadness'),
-    'ekman_surprise' : lambda : BinaryPVP('ekman_surprise'),
+    'ekman_angry' : anger_dummy,
+    'ekman_joy' : joy_dummy,
+    'ekman_sadness' : sadness_dummy,
+    'ekman_surprise' : surprise_dummy,
 }
