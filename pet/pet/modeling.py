@@ -321,7 +321,7 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
     """
     results = defaultdict(lambda: defaultdict(list))
     set_seed(seed)
-
+    # from pdb import set_trace as bp; bp()
     wrapper = TransformerModelWrapper(model_config, False)
 
     for pattern_id in pattern_ids:
@@ -403,9 +403,6 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
         # _write_results(os.path.join(output_dir, 'result_test.txt'), results)
     else:
         logger.info("=== ENSEMBLE TRAINING COMPLETE ===")
-
-
-
 
 def train_pet_ensemble(model_config: WrapperConfig, train_config: TrainConfig, eval_config: EvalConfig,
                        pattern_ids: List[int], output_dir: str, ipet_data_dir: str = None, repetitions: int = 3,

@@ -33,7 +33,6 @@ logger = log.get_logger('root')
 
 FilledPattern = Tuple[List[Union[str, Tuple[str, bool]]], List[Union[str, Tuple[str, bool]]]]
 
-
 class PVP(ABC):
     """
     This class contains functions to apply patterns and verbalizers as required by PET. Each task requires its own
@@ -300,7 +299,54 @@ class CombinedPVP(PVP):
     def verbalize(self, label) -> List[str]:
         return CombinedPVP.VERBALIZER[label]
 
+class GoEmoetionsPrompt(PVP):
+    TASK_NAME = "goemotions-prompt"
+
+    VERBALIZER = {
+        '0': 'admiration', \
+        '1': 'amusement', \
+        '2': 'anger', \
+        '3': 'annoyance', \
+        '4': 'approval', \
+        '5': 'caring', \
+        '6': 'confusion', \
+        '7': 'curiosity', \
+        '8': 'desire', \
+        '9': 'disappointment', \
+        '10': 'disapproval', \
+        '11': 'disgust', \
+        '12': 'embarrassment', \
+        '13': 'excitement', \
+        '14': 'fear', \
+        '15': 'gratitude', \
+        '16': 'grief', \
+        '17': 'joy', \
+        '18': 'love', \
+        '19': 'nervousness', \
+        '20': 'optimism', \
+        '21': 'pride', \
+        '22': 'realization', \
+        '23': 'relief', \
+        '24': 'remorse', \
+        '25': 'sadness', \
+        '26': 'surprise', \
+        '27': 'neutral'
+    }
+
+    def get_parts(self, example: InputExample):
+        text_a = self.shortenable(example.text_a)
+
+        if self.pattern_id == 0:
+            # this corresponds to the pattern [MASK]: a b
+            return ['\"', text_a ,'\"', 'Given the previous text, how does the person feel?'], ['The person feels', self.mask]
+        else:
+            raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
+
+    def verbalize(self, label) -> List[str]:
+        return GoEmoetionsPrompt.VERBALIZER[label]
+
 PVPS = {
     'ekman' : BinaryPVP,
     'combined': CombinedPVP,
+    'goemotions-prompt': GoEmoetionsPrompt,
 }

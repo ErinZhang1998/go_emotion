@@ -166,13 +166,13 @@ class BinaryProcessor(DataProcessor):
 class CombinedDataProcessor(DataProcessor):
     TASK_NAME = "combined"
 
-    TRAIN_FILE_NAME = "train.csv"
-    DEV_FILE_NAME = "dev.csv"
-    TEST_FILE_NAME = "test.csv"
+    TRAIN_FILE_NAME = "train.tsv"
+    DEV_FILE_NAME = "dev.tsv"
+    TEST_FILE_NAME = "test.tsv"
 
-    UNLABELED_FILE_NAME = "unlabeled.csv"
+    UNLABELED_FILE_NAME = "unlabeled.tsv"
 
-    LABELS = ['0', '1', '2', '3', '4']
+    LABELS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27']
 
     TEXT_A_COLUMN = 0
     TEXT_B_COLUMN = -1
@@ -197,7 +197,7 @@ class CombinedDataProcessor(DataProcessor):
         examples = []
 
         with open(path) as f:
-            reader = csv.reader(f, delimiter=',')
+            reader = csv.reader(f, delimiter='\t')
             next(reader, None) # skip headers
             for idx, row in enumerate(reader):
                 guid = "%s-%s" % (set_type, idx)
@@ -216,12 +216,14 @@ PROCESSORS = {
     'ekman' : BinaryProcessor,
     'goemotions' : BinaryProcessor,
     'combined': CombinedDataProcessor,
+    'goemotions-prompt': CombinedDataProcessor,
 }  
 TASK_HELPERS = {}
 METRICS = {
     'ekman' : ["acc"],
     'goemotions' : ["acc"],
     'combined': ["acc", "f1-macro", "recall-macro"],
+    'goemotions-prompt': CombinedDataProcessor,
 }
 
 DEFAULT_METRICS = ["acc"]

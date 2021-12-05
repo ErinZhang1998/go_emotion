@@ -166,6 +166,7 @@ class TransformerModelWrapper:
     
     def init_preprocessor(self, pattern_id : int):
         self.config.pattern_id = pattern_id
+        # from pdb import set_trace as bp; bp()
         self.preprocessor = PREPROCESSORS[self.config.wrapper_type](self, self.config.task_name, self.config.pattern_id,
                                                                         self.config.verbalizer_file)
 
