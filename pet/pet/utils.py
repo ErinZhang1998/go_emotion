@@ -233,6 +233,7 @@ def save_predictions(path: str, wrapper, results: Dict):
     if wrapper.task_helper and wrapper.task_helper.output:
         predictions_with_idx = wrapper.task_helper.output
     else:
+        from pdb import set_trace as bp; bp()
         inv_label_map = {idx: label for label, idx in wrapper.preprocessor.label_map.items()}
         for idx, prediction_idx in zip(results['indices'], results['predictions']):
             prediction = inv_label_map[prediction_idx]
@@ -262,6 +263,17 @@ def softmax(x, temperature=1.0, axis=None):
         p = p.flatten()
     return p
 
+def sigmoid(x):
+    return 1.0 / (1.0 + np.exp(-x))
+
+def cls_array_to_string(preds):
+    rslt = []
+    num_instances, num_class = preds.shape[0], preds.shape[1]
+    indices = np.arange(num_class)
+    for i in range(num_instances):
+        labels = indices[preds[i,:] == 1]
+        rslt.append(','.join(labels.astype(str)))
+    return rslt
 
 def get_verbalization_ids(word: str, tokenizer: PreTrainedTokenizer, force_single_token: bool) -> Union[int, List[int]]:
     """

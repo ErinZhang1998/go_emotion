@@ -50,7 +50,8 @@ def load_pet_configs(args) -> Tuple[WrapperConfig, pet.TrainConfig, pet.EvalConf
 
     eval_cfg = pet.EvalConfig(device=args.device, n_gpu=args.n_gpu, metrics=args.metrics,
                               per_gpu_eval_batch_size=args.pet_per_gpu_eval_batch_size,
-                              decoding_strategy=args.decoding_strategy, priming=args.priming)
+                              decoding_strategy=args.decoding_strategy, priming=args.priming,
+                              threshold=args.eval_threshold)
 
     return model_cfg, train_cfg, eval_cfg
 
@@ -216,6 +217,8 @@ def main():
                         help="Whether to perform evaluation on the dev set or the test set")
     parser.add_argument('--multi_label', action='store_true',
                         help="Whether to use priming for evaluation")
+    parser.add_argument("--eval_threshold", default=0.5, type=float,
+                        help="Evaluation threshold probability")
 
     args = parser.parse_args()
     logger.info("Parameters: {}".format(args))

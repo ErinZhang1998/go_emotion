@@ -19,13 +19,14 @@ from collections import defaultdict
 from copy import deepcopy
 from typing import List, Dict
 
+import pandas as pd
 import numpy as np
 import torch
 from sklearn.metrics import f1_score, recall_score, precision_score
 from transformers.data.metrics import simple_accuracy
 
 import log
-from pet.utils import InputExample, exact_match, save_logits, save_predictions, softmax, LogitsList, set_seed, eq_div
+from pet.utils import InputExample, exact_match, save_logits, save_predictions, softmax, LogitsList, set_seed, eq_div, sigmoid, cls_array_to_string
 from pet.wrapper import TransformerModelWrapper, SEQUENCE_CLASSIFIER_WRAPPER, WrapperConfig
 
 logger = log.get_logger('root')
@@ -101,7 +102,8 @@ class EvalConfig(PetConfig):
     """Configuration for evaluating a model."""
 
     def __init__(self, device: str = None, n_gpu: int = 1, per_gpu_eval_batch_size: int = 8,
-                 metrics: List[str] = None, decoding_strategy: str = 'default', priming: bool = False):
+                 metrics: List[str] = None, decoding_strategy: str = 'default', priming: bool = False,
+                 threshold: float = 0.5):
         """
         Create a new evaluation config.
 
@@ -118,7 +120,7 @@ class EvalConfig(PetConfig):
         self.metrics = metrics
         self.decoding_strategy = decoding_strategy
         self.priming = priming
-
+        self.threshold = threshold
 
 class IPetConfig(PetConfig):
     """Configuration for iterative PET training."""
@@ -324,6 +326,8 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
     # from pdb import set_trace as bp; bp()
     wrapper = TransformerModelWrapper(model_config, False)
 
+    # from pdb import set_trace as bp; bp()
+
     for pattern_id in pattern_ids:
         for iteration in range(repetitions):
 
@@ -334,14 +338,13 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
 
             pattern_iter_output_dir = "{}/p{}-i{}".format(output_dir, pattern_id, iteration)
 
-            if os.path.exists(pattern_iter_output_dir):
+            if (not (do_eval and not do_train)) and os.path.exists(pattern_iter_output_dir):
                 logger.warning(f"Path {pattern_iter_output_dir} already exists, skipping it...")
                 continue
 
             if not os.path.exists(pattern_iter_output_dir):
                 os.makedirs(pattern_iter_output_dir)
 
-            # from pdb import set_trace as bp; bp()
             # Training
             if do_train:
                 ipet_train_data = None
@@ -371,6 +374,8 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
                     # wrapper.model = None
                     # wrapper = None
                     torch.cuda.empty_cache()
+            
+            # from pdb import set_trace as bp; bp()
 
             # Evaluation
             if do_eval:
@@ -379,8 +384,16 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
                     wrapper = TransformerModelWrapper.from_pretrained(pattern_iter_output_dir)
 
                 eval_result = evaluate(wrapper, eval_data, eval_config, priming_data=train_data)
+                # from pdb import set_trace as bp; bp()
+                
+                # preds = eval_result['predictions']
+                # # save_results['predictions'] = pd.Series(save_results['predictions']).to_json(orient='values')
+                # num_instance, num_class = preds.shape[0], preds.shape[1]
+                # indices = np.tile(np.arange(num_class), (num_instance, 1))
+                # eval_result['predictions'] = indices[preds == 1]
 
-                save_predictions(os.path.join(pattern_iter_output_dir, 'predictions.jsonl'), wrapper, eval_result)
+                # save_predictions(os.path.join(pattern_iter_output_dir, 'predictions.json'), wrapper, eval_result)
+                save_logits(os.path.join(pattern_iter_output_dir, 'predictions.json'), eval_result)
                 save_logits(os.path.join(pattern_iter_output_dir, 'eval_logits.txt'), eval_result['logits'])
 
                 scores = eval_result['scores']
@@ -599,10 +612,10 @@ def evaluate(model: TransformerModelWrapper, eval_data: List[InputExample], conf
     results = model.eval(eval_data, device, per_gpu_eval_batch_size=config.per_gpu_eval_batch_size,
                          n_gpu=config.n_gpu, decoding_strategy=config.decoding_strategy, priming=config.priming)
     # from pdb import set_trace as bp; bp()
-
-    predictions = np.argmax(results['logits'], axis=1)
+    predictions_prob = sigmoid(results['logits'])
+    predictions = (predictions_prob > config.threshold).astype(int)
     scores = {}
-
+    # from pdb import set_trace as bp; bp()
     for metric in metrics:
         if metric == 'acc':
             scores[metric] = simple_accuracy(predictions, results['labels'])
