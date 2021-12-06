@@ -293,7 +293,10 @@ class CombinedPVP(PVP):
         if self.pattern_id == 0:
             # this corresponds to the pattern [MASK]: a b
             return ["Categories: ", ", ".join(self.VERBALIZER.values()), ".", "Which category best describes: ", text_a], ["Answer: ", self.mask]
-            # return ['\"', text_a ,'\"', 'Given the previous text, how does the person feel?'], ['The person feels', self.mask]
+        elif self.pattern_id == 1:
+            return ['\"', text_a ,'\"', 'Given the previous text, how does the person feel?'], ['The person feels', self.mask]
+        elif self.pattern_id == 2:
+            return ["What is the emotion expressed by the person who said ", "\"", text_a, "\"", "?"], [self.mask]
         else:
             raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
 
@@ -339,10 +342,13 @@ class GoEmoetionsPrompt(PVP):
 
         if self.pattern_id == 0:
             # this corresponds to the pattern [MASK]: a b
+            return ["Categories: ", ", ".join(self.VERBALIZER.values()), ".", "Which category best describes: ", text_a], ["Answer: ", self.mask]
+        elif self.pattern_id == 1:
             return ['\"', text_a ,'\"', 'Given the previous text, how does the person feel?'], ['The person feels', self.mask]
+        elif self.pattern_id == 2:
+            return ["What is the emotion expressed by the person who said ", "\"", text_a, "\"", "?"], [self.mask]
         else:
             raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
-
     def verbalize(self, label) -> List[str]:
         return GoEmoetionsPrompt.VERBALIZER[label]
 

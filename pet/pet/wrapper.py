@@ -162,7 +162,7 @@ class TransformerModelWrapper:
         if pattern_included:
             self.preprocessor = PREPROCESSORS[self.config.wrapper_type](self, self.config.task_name, self.config.pattern_id,
                                                                         self.config.verbalizer_file)
-            
+        # from pdb import set_trace as bp; bp()
     
     def init_preprocessor(self, pattern_id : int):
         self.config.pattern_id = pattern_id
@@ -434,6 +434,7 @@ class TransformerModelWrapper:
         for (ex_index, example) in enumerate(examples):
             if ex_index % 10000 == 0:
                 logger.info("Writing example {}".format(ex_index))
+
             input_features = self.preprocessor.get_input_features(example, labelled=labelled, priming=priming, \
                                                                     multi_label=self.config.multi_label)
             if self.task_helper:

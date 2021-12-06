@@ -393,7 +393,7 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
                 # eval_result['predictions'] = indices[preds == 1]
 
                 # save_predictions(os.path.join(pattern_iter_output_dir, 'predictions.json'), wrapper, eval_result)
-                save_logits(os.path.join(pattern_iter_output_dir, 'predictions.json'), eval_result)
+                save_logits(os.path.join(pattern_iter_output_dir, 'predictions.json'), eval_result['results'])
                 save_logits(os.path.join(pattern_iter_output_dir, 'eval_logits.txt'), eval_result['logits'])
 
                 scores = eval_result['scores']
@@ -611,7 +611,8 @@ def evaluate(model: TransformerModelWrapper, eval_data: List[InputExample], conf
     model.model.to(device)
     results = model.eval(eval_data, device, per_gpu_eval_batch_size=config.per_gpu_eval_batch_size,
                          n_gpu=config.n_gpu, decoding_strategy=config.decoding_strategy, priming=config.priming)
-    # from pdb import set_trace as bp; bp()
+    
+    from pdb import set_trace as bp; bp()
     predictions_prob = sigmoid(results['logits'])
     predictions = (predictions_prob > config.threshold).astype(int)
     scores = {}

@@ -213,7 +213,7 @@ class CombinedDataProcessor(DataProcessor):
         return examples
 
 class GoEmotionDataProcessor(DataProcessor):
-    TASK_NAME = "combined"
+    TASK_NAME = "goemotions-prompt"
 
     TRAIN_FILE_NAME = "train.tsv"
     DEV_FILE_NAME = "dev.tsv"
@@ -283,7 +283,6 @@ TEST_SET = "test"
 UNLABELED_SET = "unlabeled"
 
 SET_TYPES = [TRAIN_SET, DEV_SET, TEST_SET, UNLABELED_SET]
-
 
 def load_examples(
     task, 

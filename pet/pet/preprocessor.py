@@ -85,7 +85,7 @@ class MLMPreprocessor(Preprocessor):
 
         if multi_label:
             label = np.zeros(len(self.label_map))
-            for label_cls in example.label.split(', '):
+            for label_cls in example.label.split(','): #', ' for ekman
                 label[int(label_cls)] = 1
         else:
             label = self.label_map[example.label] if example.label is not None else -100
