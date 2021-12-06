@@ -280,11 +280,13 @@ class CombinedPVP(PVP):
     TASK_NAME = "combined"
 
     VERBALIZER = {
-        '0': 'anger', \
-        '1': 'fear', \
-        '2': 'joy', \
-        '3': 'sadness', \
-        '4': 'neutral', \
+        '0': 'anger', 
+        '1': 'disgust', 
+        '2': 'fear', 
+        '3': 'joy', 
+        '4': 'sadness',
+        '5': 'surprise', 
+        '6': 'neutral', 
     }
 
     def get_parts(self, example: InputExample):

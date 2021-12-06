@@ -363,9 +363,9 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
                 eval_config.save(os.path.join(pattern_iter_output_dir, 'eval_config.json'))
                 logger.info("Saving complete")
 
-                if save_unlabeled_logits and unlabeled_data is not None:
-                    logits = evaluate(wrapper, unlabeled_data, eval_config)['logits']
-                    save_logits(os.path.join(pattern_iter_output_dir, 'logits.txt'), logits)
+                # if save_unlabeled_logits and unlabeled_data is not None:
+                #     logits = evaluate(wrapper, unlabeled_data, eval_config)['logits']
+                #     save_logits(os.path.join(pattern_iter_output_dir, 'logits.txt'), logits)
 
                 if not do_eval:
                     # wrapper.model = None

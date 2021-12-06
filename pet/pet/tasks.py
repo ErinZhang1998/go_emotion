@@ -167,8 +167,8 @@ class CombinedDataProcessor(DataProcessor):
     TASK_NAME = "combined"
 
     TRAIN_FILE_NAME = "train.csv"
-    DEV_FILE_NAME = "dev.csv"
-    TEST_FILE_NAME = "test.csv"
+    DEV_FILE_NAME = "test.csv"
+    TEST_FILE_NAME = "dev.csv"
 
     UNLABELED_FILE_NAME = "unlabeled.csv"
 
