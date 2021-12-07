@@ -172,7 +172,7 @@ class CombinedDataProcessor(DataProcessor):
 
     UNLABELED_FILE_NAME = "unlabeled.csv"
 
-    LABELS = ['0', '1', '2', '3', '4']
+    LABELS = ['0', '1', '2', '3', '4', '5', '6']
 
     TEXT_A_COLUMN = 0
     TEXT_B_COLUMN = -1
@@ -216,7 +216,7 @@ class GoEmotionDataProcessor(DataProcessor):
     TASK_NAME = "combined"
 
     TRAIN_FILE_NAME = "train.tsv"
-    DEV_FILE_NAME = "dev.tsv"
+    DEV_FILE_NAME = "test.tsv"
     TEST_FILE_NAME = "test.tsv"
 
     UNLABELED_FILE_NAME = "unlabeled.tsv"
@@ -271,8 +271,8 @@ TASK_HELPERS = {}
 METRICS = {
     'ekman' : ["acc"],
     'goemotions' : ["acc"],
-    'combined': ["acc", "f1-macro", "recall-macro"],
-    'goemotions-prompt': ["acc", "f1-macro", "recall-macro"],
+    'combined': ["acc", "f1-macro", "recall-macro", "precision-macro"],
+    'goemotions-prompt': ["acc", "f1-macro", "recall-macro", "precision-macro"],
 }
 
 DEFAULT_METRICS = ["acc"]

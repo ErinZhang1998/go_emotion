@@ -35,7 +35,11 @@ from transformers import __version__ as transformers_version
 import log
 from pet import preprocessor
 from pet.tasks import TASK_HELPERS
-from pet.utils import InputFeatures, DictDataset, distillation_loss
+from pet.utils import InputFeatures, DictDataset, distillation_loss,InputExample, save_logits, save_predictions
+
+
+from sklearn.metrics import f1_score, recall_score, precision_score, accuracy_score
+
 
 logger = log.get_logger('root')
 
@@ -201,7 +205,7 @@ class TransformerModelWrapper:
         with open(os.path.join(path, CONFIG_NAME), 'r') as f:
             return jsonpickle.decode(f.read())
 
-    def train(self, task_train_data: List[InputExample], device, per_gpu_train_batch_size: int = 8, n_gpu: int = 1,
+    def train(self, train_config, eval_config, pattern_iter_output_dir, eval_data, task_train_data: List[InputExample], device, per_gpu_train_batch_size: int = 8, n_gpu: int = 1,
               num_train_epochs: int = 3, gradient_accumulation_steps: int = 1, weight_decay: float = 0.0,
               learning_rate: float = 5e-5, adam_epsilon: float = 1e-8, warmup_steps=0, max_grad_norm: float = 1,
               logging_steps: int = 50, per_gpu_unlabeled_batch_size: int = 8, unlabeled_data: List[InputExample] = None,
@@ -283,8 +287,10 @@ class TransformerModelWrapper:
         train_iterator = trange(int(num_train_epochs), desc="Epoch")
         
 
-        for _ in train_iterator:
+        for num_epoch in train_iterator:
             epoch_iterator = tqdm(train_dataloader, desc="Iteration")
+            pattern_iter_epoch_output_dir = "{}/{}".format(pattern_iter_output_dir, num_epoch)
+
             for _, batch in enumerate(epoch_iterator):
                 self.model.train()
                 unlabeled_batch = None
@@ -341,12 +347,89 @@ class TransformerModelWrapper:
                     epoch_iterator.close()
                     break
                 step += 1
+            
+            
+            if os.path.exists(pattern_iter_epoch_output_dir):
+                logger.warning(f"Save at every epoch, Path {pattern_iter_epoch_output_dir} already exists, DELETE it...")
+                import shutil
+                shutil.rmtree(pattern_iter_epoch_output_dir)
+            os.makedirs(pattern_iter_epoch_output_dir)
+            logger.info("Epoch {} Saving trained model at {}...".format(num_epoch, pattern_iter_epoch_output_dir))
+            self.save(pattern_iter_epoch_output_dir)
+            train_config.save(os.path.join(pattern_iter_epoch_output_dir, 'train_config.json'))
+            eval_config.save(os.path.join(pattern_iter_epoch_output_dir, 'eval_config.json'))
+            logger.info("Saving complete")
+            from pdb import set_trace as bp; bp()
+
+            eval_result = self.train_then_eval(eval_data, eval_config, priming_data=None)
+            save_predictions(os.path.join(pattern_iter_epoch_output_dir, 'predictions.jsonl'), wrapper, eval_result)
+            save_logits(os.path.join(pattern_iter_epoch_output_dir, 'eval_logits.txt'), eval_result['logits'])
+
+            scores = eval_result['scores']
+            logger.info("--- RESULT (epoch={}) ---".format(num_epoch))
+            logger.info(scores)
+
+            results_dict = {}
+            results_dict['test_set_after_training'] = scores
+            with open(os.path.join(pattern_iter_epoch_output_dir, 'results.json'), 'w') as fh:
+                json.dump(results_dict, fh)
+
+            
             if 0 < max_steps < global_step:
                 train_iterator.close()
                 break
 
+
         return global_step, (tr_loss / global_step if global_step > 0 else -1)
 
+    def train_then_eval(
+        self, 
+        eval_data, 
+        config,
+        priming_data = None):
+
+        if config.priming:
+            for example in eval_data:
+                example.meta['priming_data'] = priming_data
+        # from pdb import set_trace as bp; bp()
+        metrics = config.metrics if config.metrics else ['acc']
+        device = torch.device(config.device if config.device else "cuda" if torch.cuda.is_available() else "cpu")
+
+        self.model.to(device)
+        results = self.eval(eval_data, device, per_gpu_eval_batch_size=config.per_gpu_eval_batch_size,
+                            n_gpu=config.n_gpu, decoding_strategy=config.decoding_strategy, priming=config.priming)
+
+        predictions = np.argmax(results['logits'], axis=1)
+        scores = {}
+    
+        y_pred = (torch.tensor(results['logits']).sigmoid() > 0.5) * 1
+        
+
+        for metric in metrics:
+            if metric == 'acc':
+                # scores[metric] = simple_accuracy(predictions, results['labels'])
+                scores[metric] = accuracy_score(results['labels'], y_pred)
+            elif metric == "recall":
+                scores[metric] = recall_score(results['labels'], predictions)
+            elif metric == "precision":
+                scores[metric] = precision_score(results['labels'], predictions)
+            elif metric == "precision-macro":
+                scores[metric] = precision_score(results['labels'], y_pred, average='macro')
+            elif metric == "recall-macro":
+                scores[metric] = recall_score(results['labels'], y_pred, average='macro')
+            elif metric == 'f1':
+                scores[metric] = f1_score(results['labels'], predictions)
+            elif metric == 'f1-macro':
+                scores[metric] = f1_score(results['labels'], y_pred, average='macro')
+            else:
+                raise ValueError(f"Metric '{metric}' not implemented")
+
+        results['scores'] = scores
+        results['predictions'] = predictions
+        return results
+
+    
+    
     def eval(self, eval_data: List[InputExample], device, per_gpu_eval_batch_size: int = 8, n_gpu: int = 1,
              priming: bool = False, decoding_strategy: str = 'default') -> Dict:
         """
@@ -439,7 +522,7 @@ class TransformerModelWrapper:
             if self.task_helper:
                 self.task_helper.add_special_input_features(example, input_features)
             features.append(input_features)
-            if ex_index < 0:
+            if ex_index < 5:
                 logger.info(f'--- Example {ex_index} ---')
                 logger.info(input_features.pretty_print(self.tokenizer))
         return features

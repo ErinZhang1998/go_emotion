@@ -21,7 +21,7 @@ from typing import List, Dict
 
 import numpy as np
 import torch
-from sklearn.metrics import f1_score, recall_score, precision_score
+from sklearn.metrics import f1_score, recall_score, precision_score, accuracy_score
 from transformers.data.metrics import simple_accuracy
 
 import log
@@ -336,7 +336,7 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
 
             if os.path.exists(pattern_iter_output_dir):
                 logger.warning(f"Path {pattern_iter_output_dir} already exists, skipping it...")
-                continue
+                # continue
 
             if not os.path.exists(pattern_iter_output_dir):
                 os.makedirs(pattern_iter_output_dir)
@@ -352,7 +352,8 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
                     train_config, 
                     eval_config,
                     ipet_train_data=ipet_train_data,
-                    unlabeled_data=unlabeled_data))
+                    unlabeled_data=unlabeled_data,
+                    pattern_iter_output_dir=pattern_iter_output_dir))
 
                 with open(os.path.join(pattern_iter_output_dir, 'results.txt'), 'w') as fh:
                     fh.write(str(results_dict))
@@ -376,7 +377,13 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
             if do_eval:
                 logger.info("Starting evaluation...")
                 if not wrapper or (do_eval and not do_train):
-                    wrapper = TransformerModelWrapper.from_pretrained(pattern_iter_output_dir)
+                    if os.path.exists(pattern_iter_output_dir):
+                        try:
+                            wrapper = TransformerModelWrapper.from_pretrained(pattern_iter_output_dir)
+                        except:
+                            logger.warning(f"Path {pattern_iter_output_dir} does not contain correctly formatted pretrained model for eval, not loading pretrained model")
+                    else:
+                        logger.warning(f"Path {pattern_iter_output_dir} does not exist for eval, not loading pretrained model")
 
                 eval_result = evaluate(wrapper, eval_data, eval_config, priming_data=train_data)
 
@@ -459,7 +466,7 @@ def train_pet_ensemble(model_config: WrapperConfig, train_config: TrainConfig, e
                 else:
                     ipet_train_data = None
 
-                results_dict.update(train_single_model(wrapper, train_data, train_config, eval_config,
+                results_dict.update(train_single_model(wrapper, train_data, train_config, eval_config, eval_data,
                                                        ipet_train_data=ipet_train_data,
                                                        unlabeled_data=unlabeled_data))
 
@@ -514,9 +521,16 @@ def train_pet_ensemble(model_config: WrapperConfig, train_config: TrainConfig, e
         logger.info("=== ENSEMBLE TRAINING COMPLETE ===")
 
 
-def train_single_model(model: TransformerModelWrapper, train_data: List[InputExample], config: TrainConfig,
-                       eval_config: EvalConfig = None, ipet_train_data: List[InputExample] = None,
-                       unlabeled_data: List[InputExample] = None, return_train_set_results: bool = True):
+def train_single_model(
+    model: TransformerModelWrapper, 
+    train_data: List[InputExample], 
+    config: TrainConfig,
+    eval_config: EvalConfig = None, 
+    eval_data :List[InputExample]  = None,
+    ipet_train_data: List[InputExample] = None,
+    unlabeled_data: List[InputExample] = None, 
+    return_train_set_results: bool = True, 
+    pattern_iter_output_dir : str = None):
     """
     Train a single model.
 
@@ -549,7 +563,12 @@ def train_single_model(model: TransformerModelWrapper, train_data: List[InputExa
         logger.warning('Training method was called without training examples')
     else:
         global_step, tr_loss = model.train(
-            all_train_data, device,
+            config,
+            eval_config,
+            pattern_iter_output_dir, 
+            eval_data,
+            all_train_data, 
+            device,
             per_gpu_train_batch_size=config.per_gpu_train_batch_size,
             per_gpu_unlabeled_batch_size=config.per_gpu_unlabeled_batch_size,
             n_gpu=config.n_gpu,
@@ -602,20 +621,31 @@ def evaluate(model: TransformerModelWrapper, eval_data: List[InputExample], conf
 
     predictions = np.argmax(results['logits'], axis=1)
     scores = {}
+    
+    import torch.nn.functional as F
+    y_pred = (torch.tensor(results['logits']).sigmoid() > 0.5) * 1
+    # max_idx = np.argmax(results['logits'], axis=1)
+    # max_tensor = torch.tensor(max_idx)
+    # predictions = F.one_hot(max_tensor, num_classes=7)
+    # recall_score(results['labels'], y_pred, average='macro'),
+    from pdb import set_trace as bp; bp()
 
     for metric in metrics:
         if metric == 'acc':
-            scores[metric] = simple_accuracy(predictions, results['labels'])
+            # scores[metric] = simple_accuracy(predictions, results['labels'])
+            scores[metric] = accuracy_score(results['labels'], y_pred)
         elif metric == "recall":
-            scores[metric] = recall_score(results['labels'], predictions),
+            scores[metric] = recall_score(results['labels'], predictions)
         elif metric == "precision":
-            scores[metric] = precision_score(results['labels'], predictions),
+            scores[metric] = precision_score(results['labels'], predictions)
+        elif metric == "precision-macro":
+            scores[metric] = precision_score(results['labels'], y_pred, average='macro')
         elif metric == "recall-macro":
-            scores[metric] = recall_score(results['labels'], predictions, average='macro'),
+            scores[metric] = recall_score(results['labels'], y_pred, average='macro')
         elif metric == 'f1':
             scores[metric] = f1_score(results['labels'], predictions)
         elif metric == 'f1-macro':
-            scores[metric] = f1_score(results['labels'], predictions, average='macro')
+            scores[metric] = f1_score(results['labels'], y_pred, average='macro')
         elif metric == 'em':
             scores[metric] = exact_match(predictions, results['labels'], results['question_ids'])
         else:

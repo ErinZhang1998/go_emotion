@@ -342,6 +342,8 @@ class GoEmoetionsPrompt(PVP):
         if self.pattern_id == 0:
             # this corresponds to the pattern [MASK]: a b
             return ['\"', text_a ,'\"', 'Given the previous text, how does the person feel?'], ['The person feels', self.mask]
+        elif self.pattern_id == 1:
+            return ["Categories: ", ", ".join(self.VERBALIZER.values()), ".", "Which category best describes: ", text_a], ["Answer: ", self.mask]
         else:
             raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
 
