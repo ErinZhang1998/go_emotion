@@ -207,6 +207,11 @@ def chunks(lst, n):
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
 
+def simple_accuracy(predictions, gt):
+    n = len(gt)
+    row_indicators = np.all(gt == predictions, axis = 1) # axis = 1 will check for equality along rows.
+    exact_match_count = np.sum(row_indicators)
+    return exact_match_count/n
 
 def remove_final_punc(s: str):
     """Remove the last character from a string if it is some form of punctuation"""

@@ -206,7 +206,7 @@ class TransformerModelWrapper:
               learning_rate: float = 5e-5, adam_epsilon: float = 1e-8, warmup_steps=0, max_grad_norm: float = 1,
               logging_steps: int = 50, per_gpu_unlabeled_batch_size: int = 8, unlabeled_data: List[InputExample] = None,
               lm_training: bool = False, use_logits: bool = False, alpha: float = 0.8, temperature: float = 1,
-              max_steps=-1, **_):
+              max_steps=-1, save_path: str = '', **_):
         """
         Train the underlying language model.
 
@@ -341,6 +341,9 @@ class TransformerModelWrapper:
                     epoch_iterator.close()
                     break
                 step += 1
+
+            if len(save_path):
+                self.save(save_path)
             if 0 < max_steps < global_step:
                 train_iterator.close()
                 break

@@ -23,10 +23,22 @@ import pandas as pd
 import numpy as np
 import torch
 from sklearn.metrics import f1_score, recall_score, precision_score
-from transformers.data.metrics import simple_accuracy
+# from transformers.data.metrics import simple_accuracy
 
 import log
-from pet.utils import InputExample, exact_match, save_logits, save_predictions, softmax, LogitsList, set_seed, eq_div, sigmoid, cls_array_to_string
+from pet.utils import (
+    InputExample, 
+    exact_match, 
+    save_logits, 
+    save_predictions, 
+    softmax, 
+    LogitsList, 
+    set_seed, 
+    eq_div, 
+    sigmoid, 
+    cls_array_to_string,
+    simple_accuracy
+)
 from pet.wrapper import TransformerModelWrapper, SEQUENCE_CLASSIFIER_WRAPPER, WrapperConfig
 
 logger = log.get_logger('root')
@@ -355,7 +367,8 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
                     train_config, 
                     eval_config,
                     ipet_train_data=ipet_train_data,
-                    unlabeled_data=unlabeled_data))
+                    unlabeled_data=unlabeled_data,
+                    save_path=pattern_iter_output_dir))
 
                 with open(os.path.join(pattern_iter_output_dir, 'results.txt'), 'w') as fh:
                     fh.write(str(results_dict))
@@ -382,7 +395,7 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
                 logger.info("Starting evaluation...")
                 if not wrapper or (do_eval and not do_train):
                     wrapper = TransformerModelWrapper.from_pretrained(pattern_iter_output_dir)
-
+                # from pdb import set_trace as bp; bp()
                 eval_result = evaluate(wrapper, eval_data, eval_config, priming_data=train_data)
                 # from pdb import set_trace as bp; bp()
                 
@@ -393,7 +406,7 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
                 # eval_result['predictions'] = indices[preds == 1]
 
                 # save_predictions(os.path.join(pattern_iter_output_dir, 'predictions.json'), wrapper, eval_result)
-                save_logits(os.path.join(pattern_iter_output_dir, 'predictions.json'), eval_result['results'])
+                save_logits(os.path.join(pattern_iter_output_dir, 'predictions.json'), eval_result['predictions'])
                 save_logits(os.path.join(pattern_iter_output_dir, 'eval_logits.txt'), eval_result['logits'])
 
                 scores = eval_result['scores']
@@ -529,7 +542,8 @@ def train_pet_ensemble(model_config: WrapperConfig, train_config: TrainConfig, e
 
 def train_single_model(model: TransformerModelWrapper, train_data: List[InputExample], config: TrainConfig,
                        eval_config: EvalConfig = None, ipet_train_data: List[InputExample] = None,
-                       unlabeled_data: List[InputExample] = None, return_train_set_results: bool = True):
+                       unlabeled_data: List[InputExample] = None, return_train_set_results: bool = True,
+                       save_path: str = ''):
     """
     Train a single model.
 
@@ -578,7 +592,8 @@ def train_single_model(model: TransformerModelWrapper, train_data: List[InputExa
             lm_training=config.lm_training,
             use_logits=config.use_logits,
             alpha=config.alpha,
-            temperature=config.temperature
+            temperature=config.temperature,
+            save_path=save_path,
         )
         results_dict['global_step'] = global_step
         results_dict['average_loss'] = tr_loss
@@ -612,7 +627,7 @@ def evaluate(model: TransformerModelWrapper, eval_data: List[InputExample], conf
     results = model.eval(eval_data, device, per_gpu_eval_batch_size=config.per_gpu_eval_batch_size,
                          n_gpu=config.n_gpu, decoding_strategy=config.decoding_strategy, priming=config.priming)
     
-    from pdb import set_trace as bp; bp()
+    # from pdb import set_trace as bp; bp()
     predictions_prob = sigmoid(results['logits'])
     predictions = (predictions_prob > config.threshold).astype(int)
     scores = {}
