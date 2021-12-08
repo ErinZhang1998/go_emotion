@@ -303,6 +303,103 @@ class CombinedPVP(PVP):
     def verbalize(self, label) -> List[str]:
         return CombinedPVP.VERBALIZER[label]
 
+class CombinedPVP(PVP):
+    TASK_NAME = "combined"
+
+    VERBALIZER = {
+        '0': 'anger', \
+        '1': 'fear', \
+        '2': 'joy', \
+        '3': 'sadness', \
+        '4': 'neutral', \
+    }
+
+    def get_parts(self, example: InputExample):
+        text_a = self.shortenable(example.text_a)
+
+        if self.pattern_id == 0:
+            # this corresponds to the pattern [MASK]: a b
+            return ["Categories: ", ", ".join(self.VERBALIZER.values()), ".", "Which category best describes: ", text_a], ["Answer: ", self.mask]
+        elif self.pattern_id == 1:
+            return ['\"', text_a ,'\"', 'Given the previous text, how does the person feel?'], ['The person feels', self.mask]
+        elif self.pattern_id == 2:
+            return ["What is the emotion expressed by the person who said ", "\"", text_a, "\"", "?"], [self.mask]
+        else:
+            raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
+
+    def verbalize(self, label) -> List[str]:
+        return CombinedPVP.VERBALIZER[label]
+
+class CombinedPVP(PVP):
+    TASK_NAME = "combined"
+
+    VERBALIZER = {
+        '0': 'anger', \
+        '1': 'fear', \
+        '2': 'joy', \
+        '3': 'sadness', \
+        '4': 'neutral', \
+    }
+
+    def get_parts(self, example: InputExample):
+        text_a = self.shortenable(example.text_a)
+
+        if self.pattern_id == 0:
+            # this corresponds to the pattern [MASK]: a b
+            return ["Categories: ", ", ".join(self.VERBALIZER.values()), ".", "Which category best describes: ", text_a], ["Answer: ", self.mask]
+        elif self.pattern_id == 1:
+            return ['\"', text_a ,'\"', 'Given the previous text, how does the person feel?'], ['The person feels', self.mask]
+        elif self.pattern_id == 2:
+            return ["What is the emotion expressed by the person who said ", "\"", text_a, "\"", "?"], [self.mask]
+        else:
+            raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
+
+    def verbalize(self, label) -> List[str]:
+        return CombinedPVP.VERBALIZER[label]
+
+class IntensityPVP(PVP):
+    TASK_NAME = "intensity"
+
+    VERBALIZER = {
+        '0': ['slightly', 'angry'],
+        '1': ['somewhat', 'angry'],
+        '2': ['moderately', 'angry'],
+        '3': ['extremely', 'angry'],
+        '4': ['slightly', 'disgusted'],
+        '5': ['somewhat', 'disgusted'],
+        '6': ['moderately', 'disgusted'],
+        '7': ['extremely', 'disgusted'],
+        '8': ['slightly', 'afraid'],
+        '9': ['somewhat', 'afraid'],
+        '10': ['moderately', 'afraid'],
+        '11': ['extremely', 'afraid'],
+        '12': ['slightly', 'happy'],
+        '13': ['somewhat', 'happy'],
+        '14': ['moderately', 'happy'],
+        '15': ['extremely', 'happy'],
+        '16': ['slightly', 'sad'],
+        '17': ['somewhat', 'sad'],
+        '18': ['moderately', 'sad'],
+        '19': ['extremely', 'sad'],
+        '20': ['slightly', 'surprised'],
+        '21': ['somewhat', 'surprised'],
+        '22': ['moderately', 'surprised'],
+        '23': ['extremely', 'surprised'],
+        '24': ['neutral']
+    }
+
+
+    def get_parts(self, example: InputExample):
+        text_a = self.shortenable(example.text_a)
+
+        if self.pattern_id == 0:
+            return ['\"', text_a ,'\"', 'Given the previous text, how does the person feel?'], ['The person feels', self.mask]
+        else:
+            raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
+
+    def verbalize(self, label) -> List[str]:
+        return IntensityPVP.VERBALIZER[label]
+
 class GoEmoetionsPrompt(PVP):
     TASK_NAME = "goemotions-prompt"
 
@@ -356,4 +453,5 @@ PVPS = {
     'ekman' : BinaryPVP,
     'combined': CombinedPVP,
     'goemotions-prompt': GoEmoetionsPrompt,
+    'intensity': IntensityPVP,
 }

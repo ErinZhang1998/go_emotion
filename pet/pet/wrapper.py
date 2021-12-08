@@ -31,6 +31,7 @@ from transformers import InputExample, AdamW, get_linear_schedule_with_warmup, P
     XLMRobertaTokenizer, AlbertForSequenceClassification, AlbertForMaskedLM, AlbertTokenizer, AlbertConfig, \
     GPT2Config, GPT2LMHeadModel, GPT2Tokenizer
 from transformers import __version__ as transformers_version
+from pet.utils import ImbalancedDatasetSampler
 
 import log
 from pet import preprocessor
@@ -234,7 +235,9 @@ class TransformerModelWrapper:
 
         train_batch_size = per_gpu_train_batch_size * max(1, n_gpu)
         train_dataset = self._generate_dataset(task_train_data)
-        train_sampler = RandomSampler(train_dataset)
+        # train_sampler = RandomSampler(train_dataset)
+        # from pdb import set_trace as bp; bp()
+        train_sampler = ImbalancedDatasetSampler(train_dataset)
         train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=train_batch_size)
 
         unlabeled_dataloader, unlabeled_iter = None, None

@@ -100,7 +100,7 @@ class MultiMaskTaskHelper(TaskHelper):
         loss_fct = CrossEntropyLoss(reduction='none')
 
         # prediction_scores.shape == max_seq_len x vocab_size x batch_size
-        prediction_scores = self.wrapper.model(**inputs)[0].permute(1, 2, 0)
+        prediction_scores = self.wrapper.model(**inputs)[0].permute(1, 0)
 
         # all_choice_token_ids.shape == batch_size x num_choices x max_seq_len
         all_choice_token_ids = batch['choice_token_ids']
@@ -110,6 +110,7 @@ class MultiMaskTaskHelper(TaskHelper):
         all_labels = batch['labels']
 
         # correct_choice_token_ids.shape == max_seq_len x batch_size
+        from pdb import set_trace as bp; bp()
         correct_choice_token_ids = all_choice_token_ids[torch.arange(batch_size), all_labels].permute(1, 0)
 
         wrong_choices_mask = torch.ones_like(all_choice_token_ids)

@@ -27,6 +27,8 @@ from pet import task_helpers
 from pet.utils import InputExample
 import pandas as pd
 
+from pet.task_helpers import MultiMaskTaskHelper
+
 logger = log.get_logger('root')
 
 GO_EMOTIONS_LABELS = [
@@ -260,19 +262,72 @@ class GoEmotionDataProcessor(DataProcessor):
 
         return examples
 
+class IntensityDataProcessor(DataProcessor):
+    TASK_NAME = "intensity"
+
+    TRAIN_FILE_NAME = "train.csv"
+    DEV_FILE_NAME = "dev.csv"
+    TEST_FILE_NAME = "test.csv"
+
+    UNLABELED_FILE_NAME = "unlabeled.csv"
+
+    LABELS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24']
+
+    TEXT_A_COLUMN = 0
+    TEXT_B_COLUMN = -1
+    LABEL_COLUMN = 1
+
+    def get_train_examples(self, data_dir: str) -> List[InputExample]:
+        return self._create_examples(os.path.join(data_dir, IntensityDataProcessor.TRAIN_FILE_NAME), "train")
+
+    def get_dev_examples(self, data_dir: str) -> List[InputExample]:
+        return self._create_examples(os.path.join(data_dir, IntensityDataProcessor.DEV_FILE_NAME), "dev")
+
+    def get_test_examples(self, data_dir) -> List[InputExample]:
+        return self._create_examples(os.path.join(data_dir, IntensityDataProcessor.TEST_FILE_NAME), "test")
+
+    def get_unlabeled_examples(self, data_dir) -> List[InputExample]:
+        return self._create_examples(os.path.join(data_dir, IntensityDataProcessor.UNLABELED_FILE_NAME), "unlabeled")
+
+    def get_labels(self) -> List[str]:
+        return IntensityDataProcessor.LABELS
+
+    def _create_examples(self, path, set_type, max_examples=-1, skip_first=0):
+        examples = []
+
+        with open(path) as f:
+            reader = csv.reader(f, delimiter=',')
+            next(reader, None) # skip headers
+            for idx, row in enumerate(reader):
+                guid = "%s-%s" % (set_type, idx)
+                label = row[IntensityDataProcessor.LABEL_COLUMN]
+                text_a = row[IntensityDataProcessor.TEXT_A_COLUMN]
+                # do some additional text processing
+                # from pdb import set_trace as bp; bp()
+                text_b = row[IntensityDataProcessor.TEXT_B_COLUMN] if IntensityDataProcessor.TEXT_B_COLUMN >= 0 else None
+                example = InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label)
+                examples.append(example)
+
+        return examples
+
 # type: Dict[str,Callable[[],DataProcessor]]
 PROCESSORS = {
     'ekman' : BinaryProcessor,
     'goemotions' : BinaryProcessor,
     'combined': CombinedDataProcessor,
     'goemotions-prompt': GoEmotionDataProcessor,
-}  
+    'intensity': IntensityDataProcessor,
+}
+
 TASK_HELPERS = {}
+# TASK_HELPERS['intensity'] = MultiMaskTaskHelper
+
 METRICS = {
     'ekman' : ["acc"],
     'goemotions' : ["acc"],
     'combined': ["acc", "f1-macro", "recall-macro"],
-    'goemotions-prompt': ["acc", "f1-macro", "recall-macro"],
+    'goemotions-prompt': ["acc", "f1-macro", "recall-macro", "precision-macro"],
+    'intensity': ["acc", "f1-macro", "recall-macro", "precision-macro"]
 }
 
 DEFAULT_METRICS = ["acc"]
