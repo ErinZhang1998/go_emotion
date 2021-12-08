@@ -247,7 +247,7 @@ class GoEmotionDataProcessor(DataProcessor):
 
         with open(path) as f:
             reader = csv.reader(f, delimiter='\t')
-            next(reader, None) # skip headers
+            # next(reader, None) # skip headers
             for idx, row in enumerate(reader):
                 guid = "%s-%s" % (set_type, idx)
                 label = row[GoEmotionDataProcessor.LABEL_COLUMN]
@@ -260,12 +260,59 @@ class GoEmotionDataProcessor(DataProcessor):
 
         return examples
 
+
+class BothMergeDataProcessor(DataProcessor):
+
+    TRAIN_FILE_NAME = "train.csv"
+    DEV_FILE_NAME = "test.csv"
+    TEST_FILE_NAME = "test.csv"
+
+    UNLABELED_FILE_NAME = "unlabeled.csv"
+
+    LABELS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27']
+
+    TEXT_A_COLUMN = 0
+    TEXT_B_COLUMN = -1
+    LABEL_COLUMN = 1
+
+    def get_train_examples(self, data_dir: str) -> List[InputExample]:
+        return self._create_examples(os.path.join(data_dir, BothMergeDataProcessor.TRAIN_FILE_NAME), "train")
+
+    def get_dev_examples(self, data_dir: str) -> List[InputExample]:
+        return self._create_examples(os.path.join(data_dir, BothMergeDataProcessor.DEV_FILE_NAME), "dev")
+
+    def get_test_examples(self, data_dir) -> List[InputExample]:
+        return self._create_examples(os.path.join(data_dir, BothMergeDataProcessor.TEST_FILE_NAME), "test")
+
+    def get_unlabeled_examples(self, data_dir) -> List[InputExample]:
+        return self._create_examples(os.path.join(data_dir, BothMergeDataProcessor.UNLABELED_FILE_NAME), "unlabeled")
+
+    def get_labels(self) -> List[str]:
+        return BothMergeDataProcessor.LABELS
+
+    def _create_examples(self, path, set_type, max_examples=-1, skip_first=0):
+        examples = []
+
+        with open(path) as f:
+            reader = csv.reader(f, delimiter=',')
+            next(reader, None) # skip headers
+            for idx, row in enumerate(reader):
+                guid = "%s-%s" % (set_type, idx)
+                label = row[BothMergeDataProcessor.LABEL_COLUMN]
+                text_a = row[BothMergeDataProcessor.TEXT_A_COLUMN]
+                text_b = row[BothMergeDataProcessor.TEXT_B_COLUMN] if BothMergeDataProcessor.TEXT_B_COLUMN >= 0 else None
+                example = InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label)
+                examples.append(example)
+
+        return examples
+
 # type: Dict[str,Callable[[],DataProcessor]]
 PROCESSORS = {
     'ekman' : BinaryProcessor,
     'goemotions' : BinaryProcessor,
     'combined': CombinedDataProcessor,
     'goemotions-prompt': GoEmotionDataProcessor,
+    'both-merge' : BothMergeDataProcessor,
 }  
 TASK_HELPERS = {}
 METRICS = {
@@ -273,6 +320,7 @@ METRICS = {
     'goemotions' : ["acc"],
     'combined': ["acc", "f1-macro", "recall-macro", "precision-macro"],
     'goemotions-prompt': ["acc", "f1-macro", "recall-macro", "precision-macro"],
+    'both-merge' : ["acc", "f1-macro", "recall-macro", "precision-macro"],
 }
 
 DEFAULT_METRICS = ["acc"]
@@ -325,7 +373,6 @@ def load_examples(
         for example in examples:
             limited_examples.add(example)
         examples = limited_examples.to_list()
-
     all_labels = []
     for example in examples:
         if isinstance(example.label, list):

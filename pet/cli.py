@@ -251,6 +251,10 @@ def main():
         args.task_name, args.data_dir, eval_set, num_examples=test_ex, num_examples_per_label=test_ex_per_label)
     args.metrics = METRICS.get(args.task_name, DEFAULT_METRICS)
 
+    print(len(eval_data))
+    
+
+
     pet_model_cfg, pet_train_cfg, pet_eval_cfg = load_pet_configs(args)
     if args.method == 'single':
         train_pet_one_model(pet_model_cfg, pet_train_cfg, pet_eval_cfg, args.pattern_ids, args.output_dir,

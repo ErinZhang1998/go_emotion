@@ -303,7 +303,7 @@ class CombinedPVP(PVP):
         return CombinedPVP.VERBALIZER[label]
 
 class GoEmoetionsPrompt(PVP):
-    TASK_NAME = "goemotions-prompt"
+    # TASK_NAME = "goemotions-prompt"
 
     VERBALIZER = {
         '0': 'admiration', \
@@ -354,4 +354,5 @@ PVPS = {
     'ekman' : BinaryPVP,
     'combined': CombinedPVP,
     'goemotions-prompt': GoEmoetionsPrompt,
+    'both-merge' : GoEmoetionsPrompt,
 }

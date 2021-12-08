@@ -351,6 +351,7 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
                     train_data, 
                     train_config, 
                     eval_config,
+                    eval_data=eval_data,
                     ipet_train_data=ipet_train_data,
                     unlabeled_data=unlabeled_data,
                     pattern_iter_output_dir=pattern_iter_output_dir))
@@ -383,7 +384,11 @@ def train_pet_one_model(model_config: WrapperConfig, train_config: TrainConfig, 
                         except:
                             logger.warning(f"Path {pattern_iter_output_dir} does not contain correctly formatted pretrained model for eval, not loading pretrained model")
                     else:
-                        logger.warning(f"Path {pattern_iter_output_dir} does not exist for eval, not loading pretrained model")
+                        try:
+                            wrapper = TransformerModelWrapper.from_pretrained(output_dir)
+                        except:
+                            logger.warning(f"Path {pattern_iter_output_dir} does not exist for eval, not loading pretrained model")
+                            
 
                 eval_result = evaluate(wrapper, eval_data, eval_config, priming_data=train_data)
 
@@ -628,7 +633,9 @@ def evaluate(model: TransformerModelWrapper, eval_data: List[InputExample], conf
     # max_tensor = torch.tensor(max_idx)
     # predictions = F.one_hot(max_tensor, num_classes=7)
     # recall_score(results['labels'], y_pred, average='macro'),
-    from pdb import set_trace as bp; bp()
+    # from pdb import set_trace as bp; bp()
+
+    print(y_pred.shape, results['labels'].shape)
 
     for metric in metrics:
         if metric == 'acc':

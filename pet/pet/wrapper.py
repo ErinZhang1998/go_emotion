@@ -170,7 +170,6 @@ class TransformerModelWrapper:
     
     def init_preprocessor(self, pattern_id : int):
         self.config.pattern_id = pattern_id
-        # from pdb import set_trace as bp; bp()
         self.preprocessor = PREPROCESSORS[self.config.wrapper_type](self, self.config.task_name, self.config.pattern_id,
                                                                         self.config.verbalizer_file)
 
@@ -289,7 +288,20 @@ class TransformerModelWrapper:
 
         for num_epoch in train_iterator:
             epoch_iterator = tqdm(train_dataloader, desc="Iteration")
+            sub_dir = pattern_iter_output_dir.split("/")[-1]
             pattern_iter_epoch_output_dir = "{}/{}".format(pattern_iter_output_dir, num_epoch)
+            if os.path.exists(pattern_iter_epoch_output_dir):
+                logger.warning(f"Save at every epoch, Path {pattern_iter_epoch_output_dir} already exists, DELETE it...")
+                import shutil
+                shutil.rmtree(pattern_iter_epoch_output_dir)
+            os.mkdir(pattern_iter_epoch_output_dir)
+            pattern_iter_epoch_output_dir = os.path.join(pattern_iter_epoch_output_dir,sub_dir)
+            if os.path.exists(pattern_iter_epoch_output_dir):
+                logger.warning(f"Save at every epoch, Path {pattern_iter_epoch_output_dir} already exists, DELETE it...")
+                import shutil
+                shutil.rmtree(pattern_iter_epoch_output_dir)
+            os.mkdir(pattern_iter_epoch_output_dir)
+
 
             for _, batch in enumerate(epoch_iterator):
                 self.model.train()
@@ -314,7 +326,6 @@ class TransformerModelWrapper:
                     'use_logits': use_logits, 'temperature': temperature
                 }
                 loss = self.task_helper.train_step(batch, **train_step_inputs) if self.task_helper else None
-                # from pdb import set_trace as bp; bp()
                 if loss is None:
                     loss = TRAIN_STEP_FUNCTIONS[self.config.wrapper_type](self)(batch, **train_step_inputs)
 
@@ -349,20 +360,14 @@ class TransformerModelWrapper:
                 step += 1
             
             
-            if os.path.exists(pattern_iter_epoch_output_dir):
-                logger.warning(f"Save at every epoch, Path {pattern_iter_epoch_output_dir} already exists, DELETE it...")
-                import shutil
-                shutil.rmtree(pattern_iter_epoch_output_dir)
-            os.makedirs(pattern_iter_epoch_output_dir)
             logger.info("Epoch {} Saving trained model at {}...".format(num_epoch, pattern_iter_epoch_output_dir))
             self.save(pattern_iter_epoch_output_dir)
             train_config.save(os.path.join(pattern_iter_epoch_output_dir, 'train_config.json'))
             eval_config.save(os.path.join(pattern_iter_epoch_output_dir, 'eval_config.json'))
             logger.info("Saving complete")
-            from pdb import set_trace as bp; bp()
 
             eval_result = self.train_then_eval(eval_data, eval_config, priming_data=None)
-            save_predictions(os.path.join(pattern_iter_epoch_output_dir, 'predictions.jsonl'), wrapper, eval_result)
+            save_predictions(os.path.join(pattern_iter_epoch_output_dir, 'predictions.jsonl'), self, eval_result)
             save_logits(os.path.join(pattern_iter_epoch_output_dir, 'eval_logits.txt'), eval_result['logits'])
 
             scores = eval_result['scores']
@@ -391,7 +396,6 @@ class TransformerModelWrapper:
         if config.priming:
             for example in eval_data:
                 example.meta['priming_data'] = priming_data
-        # from pdb import set_trace as bp; bp()
         metrics = config.metrics if config.metrics else ['acc']
         device = torch.device(config.device if config.device else "cuda" if torch.cuda.is_available() else "cpu")
 
@@ -493,6 +497,7 @@ class TransformerModelWrapper:
 
     def _generate_dataset(self, data: List[InputExample], labelled: bool = True, priming: bool = False):
         features = self._convert_examples_to_features(data, labelled=labelled, priming=priming)
+        print(len(features))
         feature_dict = {
             'input_ids': torch.tensor([f.input_ids for f in features], dtype=torch.long),
             'attention_mask': torch.tensor([f.attention_mask for f in features], dtype=torch.long),
@@ -514,6 +519,7 @@ class TransformerModelWrapper:
     def _convert_examples_to_features(self, examples: List[InputExample], labelled: bool = True,
                                       priming: bool = False) -> List[InputFeatures]:
         features = []
+        print(len(examples))
         for (ex_index, example) in enumerate(examples):
             if ex_index % 10000 == 0:
                 logger.info("Writing example {}".format(ex_index))
@@ -569,7 +575,6 @@ class TransformerModelWrapper:
                        unlabeled_batch: Optional[Dict[str, torch.Tensor]] = None, lm_training: bool = False,
                        alpha: float = 0, **_) -> torch.Tensor:
         """Perform a MLM training step."""
-        # from pdb import set_trace as bp; bp()
         inputs = self.generate_default_inputs(labeled_batch)
         mlm_labels, labels = labeled_batch['mlm_labels'], labeled_batch['labels']
 
@@ -577,7 +582,6 @@ class TransformerModelWrapper:
         prediction_scores = self.preprocessor.pvp.convert_mlm_logits_to_cls_logits(mlm_labels, outputs[0])
         labels = labels.float()
 
-        # from pdb import set_trace as bp; bp()
         if self.config.multi_label:
             loss = nn.BCEWithLogitsLoss()(prediction_scores, labels)
         else:
