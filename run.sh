@@ -1,5 +1,59 @@
+
+CUDA_VISIBLE_DEVICES=7 python3 cli.py --method single --task_name both-merge --pattern_ids 1 --data_dir /raid/xiaoyuz1/goemotions/goemotions/both_merge --model_type bert --model_name_or_path /raid/xiaoyuz1/goemotions/prompt/both-merge-continue/p1-i0/0/p1-i0 --output_dir /raid/xiaoyuz1/goemotions_result/both-merge-epoch-6 --multi_label --do_eval
+
+CUDA_VISIBLE_DEVICES=7 python3 cli.py --method single --task_name both-merge --pattern_ids 1 --data_dir /raid/xiaoyuz1/goemotions/goemotions/both_merge --model_type bert --model_name_or_path /raid/xiaoyuz1/goemotions/prompt/both-merge-continue/p1-i0/3/p1-i0 --output_dir /raid/xiaoyuz1/goemotions_result/both-merge-epoch-9 --multi_label --do_eval
+
+CUDA_VISIBLE_DEVICES=7 python3 cli.py --method single --task_name both-merge --pattern_ids 1 --data_dir /raid/xiaoyuz1/goemotions/goemotions/both_merge --model_type bert --model_name_or_path /raid/xiaoyuz1/goemotions/prompt/both-merge-continue/p1-i0/4/p1-i0 --output_dir /raid/xiaoyuz1/goemotions_result/both-merge-epoch-10 --multi_label --do_eval
+
+
+# Both Merged
+
+
+CUDA_VISIBLE_DEVICES=7 python3 cli.py --method single --task_name both-merge --pattern_ids 1 --data_dir /raid/xiaoyuz1/goemotions/goemotions/both_merge --model_type bert --model_name_or_path /raid/xiaoyuz1/goemotions/prompt/both-merge/p1-i0/4/p1-i0 --output_dir /raid/xiaoyuz1/goemotions/prompt/both-merge-continue --multi_label --do_train --pet_num_train_epochs 5 --pet_per_gpu_train_batch_size 2 
+
+
+CUDA_VISIBLE_DEVICES=7 python3 cli.py --method single --task_name both-merge --pattern_ids 1 --data_dir /raid/xiaoyuz1/goemotions/goemotions/both_merge --model_type bert --model_name_or_path bert-base-uncased --output_dir /raid/xiaoyuz1/goemotions/prompt/both-merge --multi_label --do_train --pet_num_train_epochs 5 --pet_per_gpu_train_batch_size 2 
+
+
+# Ekman 3 --> GoEmotions 27+1
+CUDA_VISIBLE_DEVICES=7 python3 cli.py --method single --task_name goemotions-prompt --pattern_ids 1 --data_dir /raid/xiaoyuz1/goemotions/goemotions/data --model_type bert --model_name_or_path /raid/xiaoyuz1/goemotions/prompt/combined_neg/p0-i0/2/p0-i0 --output_dir /raid/xiaoyuz1/goemotions/prompt/goemotion-prompt-ekman_neg --multi_label --do_train --pet_num_train_epochs 5 --pet_per_gpu_train_batch_size 32 
+
+CUDA_VISIBLE_DEVICES=4 python3 cli.py --method single --task_name goemotions-prompt --pattern_ids 1 --data_dir /raid/xiaoyuz1/goemotions/goemotions/data --model_type bert --model_name_or_path /raid/xiaoyuz1/goemotions/prompt/combined_neg/p0-i0/2/p0-i0 --output_dir /raid/xiaoyuz1/goemotions/prompt/goemotion-prompt-ekman_neg-small-batch --multi_label --do_train --pet_num_train_epochs 5 --pet_per_gpu_train_batch_size 2 
+
+
+
+# Ekman 3
+CUDA_VISIBLE_DEVICES=7 python3 cli.py --method single --task_name combined --pattern_ids 0 --data_dir /raid/xiaoyuz1/goemotions/goemotions/combined_neg --model_type bert --model_name_or_path bert-base-uncased --output_dir /raid/xiaoyuz1/goemotions/prompt/combined_neg --multi_label --do_train --pet_num_train_epochs 5 --pet_per_gpu_train_batch_size 32
+
+
+# Ekman 6+1 continue training the first Combined
+CUDA_VISIBLE_DEVICES=5 python3 cli.py --method single --task_name combined --pattern_ids 0 --data_dir /raid/xiaoyuz1/goemotions/goemotions/combined --model_type bert --model_name_or_path /raid/xiaoyuz1/goemotions/prompt/combined/p0-i0 --output_dir /raid/xiaoyuz1/goemotions/prompt/combined-continue --multi_label --do_train --pet_num_train_epochs 5 --pet_per_gpu_train_batch_size 32
+
+# [dec 7th]
+# Combine 27+1 GoEmotions and 6+1 Ekman (batch_size = 2)
+CUDA_VISIBLE_DEVICES=6 python3 cli.py --method single --task_name both-merge --pattern_ids 1 --data_dir /raid/xiaoyuz1/goemotions/goemotions/both_merge_6 --model_type bert --model_name_or_path bert-base-uncased --output_dir /raid/xiaoyuz1/goemotions/prompt/both_merge_6 --multi_label --do_train --pet_num_train_epochs 10 --pet_per_gpu_train_batch_size 2 
+
+
+# 27+1 GoEmotions (batch_size = 2) on 6+1 Ekman (batch_size = 32)
+CUDA_VISIBLE_DEVICES=7 python3 cli.py --method single --task_name goemotions-prompt --pattern_ids 1 --data_dir /raid/xiaoyuz1/goemotions/goemotions/data --model_type bert --model_name_or_path /raid/xiaoyuz1/goemotions_models/p0-i0 --output_dir /raid/xiaoyuz1/goemotions/prompt/combined-continue-small-batch --multi_label --do_train --pet_num_train_epochs 10 --pet_per_gpu_train_batch_size 2 
+
+
+# 6+1 Ekman (batch_size = 2)
+CUDA_VISIBLE_DEVICES=5 python3 cli.py --method single --task_name combined --pattern_ids 0 --data_dir /raid/xiaoyuz1/goemotions/goemotions/combined --model_type bert --model_name_or_path bert-base-uncased --output_dir /raid/xiaoyuz1/goemotions/prompt/combined-very-small-batch --multi_label --do_train --pet_num_train_epochs 10 --pet_per_gpu_train_batch_size 2
+
+
+
 # Raw all the way
-CUDA_VISIBLE_DEVICES=6 python3 cli.py --method single --task_name goemotions-prompt --pattern_ids 1 --data_dir /raid/xiaoyuz1/goemotions/goemotions/data --model_type bert --model_name_or_path /raid/xiaoyuz1/goemotions/prompt/goemotion-prompt-no-pretrain-pattern-1/p1-i0 --output_dir /raid/xiaoyuz1/goemotions/prompt/goemotion-prompt-no-pretrain-pattern-1 --multi_label --do_train --pet_num_train_epochs 2 --pet_per_gpu_train_batch_size 32 --overwrite_output_dir
+CUDA_VISIBLE_DEVICES=6 python3 cli.py --method single --task_name goemotions-prompt --pattern_ids 1 --data_dir /raid/xiaoyuz1/goemotions/goemotions/data --model_type bert --model_name_or_path /raid/xiaoyuz1/goemotions/prompt/goemotion-prompt-no-pretrain-pattern-1/p1-i0/1/p1-i0 --output_dir /raid/xiaoyuz1/goemotions/prompt/goemotion-prompt-no-pretrain-pattern-1-continue --multi_label --do_train --pet_num_train_epochs 5 --pet_per_gpu_train_batch_size 32 --overwrite_output_dir
+## train
+CUDA_VISIBLE_DEVICES=6 python3 cli.py --method single --task_name goemotions-prompt --pattern_ids 1 --data_dir /raid/xiaoyuz1/goemotions/goemotions/data --model_type bert --model_name_or_path /raid/xiaoyuz1/goemotions/prompt/goemotion-prompt-no-pretrain-pattern-1/p1-i0/0/p1-i0 --output_dir /raid/xiaoyuz1/goemotions/prompt/goemotion-prompt-no-pretrain-pattern-1 --multi_label --do_train --pet_num_train_epochs 2 --pet_per_gpu_train_batch_size 32 --overwrite_output_dir
+
+## evaluate
+CUDA_VISIBLE_DEVICES=6 python3 cli.py --method single --task_name goemotions-prompt --pattern_ids 1 --data_dir /raid/xiaoyuz1/goemotions/goemotions/data --model_type bert --model_name_or_path /raid/xiaoyuz1/goemotions/prompt/goemotion-prompt-no-pretrain-pattern-1/p1-i0/0/p1-i0 --output_dir /raid/xiaoyuz1/goemotions/prompt/goemotion-prompt-no-pretrain-pattern-1/p1-i0/0 --multi_label --do_eval --pet_num_train_epochs 2 --pet_per_gpu_train_batch_size 32
+
+
+## train
+CUDA_VISIBLE_DEVICES=6 python3 cli.py --method single --task_name goemotions-prompt --pattern_ids 1 --data_dir /raid/xiaoyuz1/goemotions/goemotions/data --model_type bert --model_name_or_path /raid/xiaoyuz1/goemotions/prompt/goemotion-prompt-no-pretrain-pattern-1/p1-i0/0 --output_dir /raid/xiaoyuz1/goemotions/prompt/goemotion-prompt-no-pretrain-pattern-1 --multi_label --do_train --pet_num_train_epochs 2 --pet_per_gpu_train_batch_size 32 --overwrite_output_dir
 
 # DEBUG
 CUDA_VISIBLE_DEVICES=6 python3 cli.py --method single --task_name goemotions-prompt --pattern_ids 1 --data_dir /raid/xiaoyuz1/goemotions/goemotions/data --model_type bert --model_name_or_path bert-base-uncased --output_dir /raid/xiaoyuz1/goemotions/prompt/DEBUG --multi_label --do_train --pet_num_train_epochs 2 --pet_per_gpu_train_batch_size 32
